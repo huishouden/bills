@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/huishouden/bills/compare/v1.1.0...v1.1.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* an entry saved just before the app closes is no longer lost ([#9](https://github.com/huishouden/bills/issues/9)) ([4367458](https://github.com/huishouden/bills/commit/436745804505ba65c30f87546d80ab74e9cdf5e0))
+
 ## [1.1.0](https://github.com/huishouden/bills/compare/v1.0.1...v1.1.0) (2026-10-02)
 
 
