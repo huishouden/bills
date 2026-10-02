@@ -26,11 +26,13 @@ export const KIND_LABELS: Record<BillKind, string> = {
 };
 
 export type BillStatus = 'due' | 'paid' | 'credit' | 'unknown';
-export type Repeat = 'monthly' | 'quarterly' | 'yearly';
+export type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 export interface Autopay {
   enrolled: boolean;
   nextDraft?: Ymd;
+  /** How it is paid automatically, when known: charged to a card (a bill found in card spending). */
+  via?: 'card';
 }
 
 /** `bills/{billId}`: one bill (one statement, or one manual entry). */
@@ -118,8 +120,24 @@ export interface ManualBillInput {
   due: Ymd | null;
   amount: string | null;
   autopay: boolean | null;
+  /** Autopay by card; kept through edits while autopay stays on. */
+  autopayVia?: 'card';
   repeat: Repeat | null;
   payUrl?: string;
+}
+
+/** `billSuggestions/{id}`: a member's answer to a regular charge found in card spending, keyed by its merchant. */
+export interface BillSuggestionDoc {
+  status: 'added' | 'dismissed';
+  name: string;
+  /** The bill it became (added). */
+  billId?: string;
+  by: string;
+  at: number;
+}
+
+export interface BillSuggestion extends BillSuggestionDoc {
+  id: string;
 }
 
 export function clean<T extends object>(o: T): T {
@@ -166,7 +184,7 @@ export function manualBillDoc(input: ManualBillInput, by: string, createdAt: num
     due: input.due,
     amountDue: amount ? { amount, currency: 'USD' } : null,
     status: keep?.status ?? (amount === '0.00' ? 'paid' : 'due'),
-    autopay: input.autopay === null ? null : { enrolled: input.autopay },
+    autopay: input.autopay === null ? null : input.autopay && (input.autopayVia ?? keep?.autopay?.via) ? { enrolled: true, via: 'card' as const } : { enrolled: input.autopay },
     payUrl: input.payUrl?.trim().startsWith('https://') ? input.payUrl.trim().slice(0, 500) : undefined,
     repeat: input.repeat ?? undefined,
     paidAt: keep?.paidAt,

@@ -18,7 +18,7 @@ test('groups bills and calls out the ones autopay will not pay', async ({ page }
   const week = section(page, 'This week');
   await expect(week.getByRole('listitem', { name: 'Example Power Co' })).toContainText('Autopay off');
   await expect(week.getByRole('listitem', { name: 'Example Fiber' })).toContainText('Autopay on');
-  await expect(section(page, 'Later this month').getByRole('listitem')).toHaveCount(3);
+  await expect(section(page, 'Later this month').getByRole('listitem')).toHaveCount(4);
 });
 
 test('mark paid moves a bill to history, and Undo brings it back', async ({ page }) => {
@@ -85,4 +85,35 @@ test('a source is edited and deleted with Undo', async ({ page }) => {
   await expect(page.getByRole('list', { name: 'Bill sources' })).not.toContainText('Example Commons HOA');
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByRole('list', { name: 'Bill sources' })).toContainText('Example Commons HOA');
+});
+
+test('possible regular bills from card spending: Add and Not a bill, each with Undo', async ({ page }) => {
+  await open(page);
+  const card = page.getByRole('region', { name: 'Possible regular bills' });
+  for (const name of ['Planet Fitness', 'Netflix', 'Spotify', 'Amazon Prime']) await expect(card.getByRole('listitem', { name })).toBeVisible();
+  // Hulu is a bill already; the fiber charge is the Example Fiber source's bill.
+  await expect(card).not.toContainText('Hulu');
+  await expect(card).not.toContainText('Fiber');
+  await expect(card.getByRole('listitem', { name: 'Netflix' })).toContainText('Monthly, $22.99 · next Jun 9 · 12 charges');
+  await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
+
+  await card.getByRole('button', { name: 'Add Netflix' }).click();
+  await expect(page.getByText('Added Netflix')).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Netflix' })).toHaveCount(0);
+  const bill = section(page, 'Later this month').getByRole('listitem', { name: 'Netflix' });
+  await expect(bill).toContainText('$22.99');
+  await expect(bill).toContainText('Autopay by card');
+  await expect(bill).toContainText('repeats monthly');
+  await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(card.getByRole('listitem', { name: 'Netflix' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Netflix' })).toHaveCount(1);
+
+  await card.getByRole('button', { name: 'Not a bill: Spotify' }).click();
+  await expect(page.getByText("Spotify won't be suggested again")).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Spotify' })).toHaveCount(0);
+  await expect(page.getByText('Subscriptions: $77.55/month across 4')).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(card.getByRole('listitem', { name: 'Spotify' })).toBeVisible();
+  await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
 });

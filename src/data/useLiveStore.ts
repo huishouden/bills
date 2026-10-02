@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { deleteDoc, setDoc, updateDoc, writeBatch } from '@huishouden/pwa-kit/firestore';
-import { manualBillDoc, sourceDoc, withoutId, type Bill, type BillSource, type BillSync } from '../lib/model';
+import { manualBillDoc, sourceDoc, withoutId, type Bill, type BillSource, type BillSuggestion, type BillSuggestionDoc, type BillSync } from '../lib/model';
+import { spendingSince, suggestionId, toCharge } from '../lib/suggestions';
+import type { CardCharge } from '@huishouden/pwa-kit/recurring';
+import { toYmd } from '@huishouden/pwa-kit/time';
 import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
 import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
-import { nextRepeat, paidDoc, unpaidDoc } from './build';
+import { autopayRollovers, nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions, BillsStore, MailAccess } from './types';
 import { track } from '@huishouden/pwa-kit/observability';
 
@@ -21,6 +24,8 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   const [bills, setBills] = useState<Bill[]>([]);
   const [sources, setSources] = useState<BillSource[]>([]);
   const [syncs, setSyncs] = useState<BillSync[]>([]);
+  const [charges, setCharges] = useState<CardCharge[]>([]);
+  const [answers, setAnswers] = useState<BillSuggestion[]>([]);
   const [answered, setAnswered] = useState({ bills: false, sources: false });
   // The first bills snapshot from the server (not the offline cache): when the agenda is reconciled.
   const [billsFromServer, setBillsFromServer] = useState(false);
@@ -64,6 +69,18 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         (s) => setSyncs(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<BillSync, 'id'>) }))),
         fail('the email checks'),
       ),
+      onSnapshot(
+        collection(db, base, 'billSuggestions'),
+        (s) => setAnswers(s.docs.map((d) => ({ id: d.id, ...(d.data() as BillSuggestionDoc) }))),
+        fail('the suggested bills'),
+      ),
+      // Card spending from Huishouden Spending, read only, for "Possible regular bills". A failure
+      // here only hides the suggestions, so it is logged rather than shown.
+      onSnapshot(
+        query(collection(db, base, 'spendingTransactions'), where('date', '>=', spendingSince(toYmd(clock())))),
+        (s) => setCharges(s.docs.flatMap((d) => toCharge(d.data()) ?? [])),
+        (e) => console.warn('Card spending unavailable', e),
+      ),
     ];
     return () => unsubs.forEach((u) => u());
   }, [base]);
@@ -84,8 +101,16 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   useEffect(() => {
     if (!billsFromServer || synced.current) return;
     synced.current = true;
-    agenda.sync(billsRef.current);
-  }, [billsFromServer, agenda]);
+    // Repeating bills on autopay that came due since anyone looked get their next one first.
+    const now = clock();
+    const next = autopayRollovers(billsRef.current, toYmd(now), me, now);
+    if (next.length) {
+      const batch = writeBatch(db);
+      for (const n of next) batch.set(doc(db, base, 'bills', n.id), n.data);
+      void batch.commit().catch((e) => errorRef.current(readError(e, "Couldn't add the next autopay bills")));
+    }
+    agenda.sync([...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))]);
+  }, [billsFromServer, agenda, base, me]);
 
   const actions = useMemo<BillsActions>(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));
@@ -165,6 +190,31 @@ export function useLiveStore(householdId: string, me: string, members: string[],
           for (const b of unpaid) agenda.publish(b);
         };
       },
+      addSuggestion: (candidate, input) => {
+        track('add suggested bill');
+        const now = clock();
+        const ref = doc(collection(db, base, 'bills'));
+        const answer = doc(db, base, 'billSuggestions', suggestionId(candidate.merchantKey));
+        const data = manualBillDoc(input, me, now, now);
+        const batch = writeBatch(db);
+        batch.set(ref, data);
+        batch.set(answer, { status: 'added', name: data.label, billId: ref.id, by: me, at: now } satisfies BillSuggestionDoc);
+        report(batch.commit());
+        agenda.publish({ id: ref.id, ...data });
+        return () => {
+          const undo = writeBatch(db);
+          undo.delete(ref);
+          undo.delete(answer);
+          report(undo.commit());
+          agenda.unpublish(ref.id);
+        };
+      },
+      dismissSuggestion: (candidate, name) => {
+        track('dismiss suggested bill');
+        const answer = doc(db, base, 'billSuggestions', suggestionId(candidate.merchantKey));
+        report(setDoc(answer, { status: 'dismissed', name: name.slice(0, 80), by: me, at: clock() } satisfies BillSuggestionDoc));
+        return () => report(deleteDoc(answer));
+      },
       applySync: async (result) => {
         track('check email');
         const writes = result.writes.slice(0, 450);
@@ -191,5 +241,5 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     [],
   );
 
-  return { data: { bills, sources, syncs }, ready: answered.bills && answered.sources, actions, mail, me, members, clock, sample: false };
+  return { data: { bills, sources, syncs, charges, answers }, ready: answered.bills && answered.sources, actions, mail, me, members, clock, sample: false };
 }
