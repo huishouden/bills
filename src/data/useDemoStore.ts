@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
 import { manualBillDoc, sourceDoc, type Bill } from '../lib/model';
 import { sampleMailbox } from '../lib/sampleMailbox';
-import { gmailMailbox } from './gmail';
+import { gmailMailbox } from '@huishouden/pwa-kit/gmail';
 import { nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions, BillsStore, MailAccess } from './types';
 

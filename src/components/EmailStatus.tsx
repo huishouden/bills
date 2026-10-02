@@ -1,9 +1,9 @@
 import { RefreshCw } from 'lucide-react';
-import { agoWords } from '../lib/dates';
+import { agoWords } from '@huishouden/pwa-kit/time';
 import type { BillSync } from '../lib/model';
 import type { CheckState } from '../data/useEmailCheck';
 import { personName } from './bits';
-import { ErrorNotice, secondaryButton } from './ui';
+import { ErrorNotice, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
   syncs: BillSync[];

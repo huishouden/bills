@@ -7,10 +7,8 @@
 export type Ymd = string;
 
 /** A string decimal with two places, as the household's other money data is stored. */
-export interface Money {
-  amount: string;
-  currency: string;
-}
+export type { Money } from '@huishouden/pwa-kit/money';
+import type { Money } from '@huishouden/pwa-kit/money';
 
 export const BILL_KINDS = ['electric', 'gas', 'water', 'internet', 'phone', 'mortgage', 'hoa', 'insurance', 'other'] as const;
 export type BillKind = (typeof BILL_KINDS)[number];

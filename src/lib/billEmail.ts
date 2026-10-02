@@ -1,7 +1,7 @@
-import { htmlToText, tidy } from './html';
-import { decimal, usd } from './money';
+import { htmlToText, tidy } from '@huishouden/pwa-kit/gmail';
+import { toDecimal, usd } from '@huishouden/pwa-kit/money';
+import { isYmd, ymd } from '@huishouden/pwa-kit/time';
 import type { Autopay, Money, Ymd } from './model';
-import { validYmd } from './dates';
 
 /**
  * Reads a bill email the way a person skims it: the amount next to "Amount due", the date next to
@@ -78,7 +78,7 @@ function dateFromMatch(m: RegExpExecArray, ref: number): Ymd | null {
 /** Groups 1-5 of MONEY_SRC: sign or opening parenthesis, whole dollars, cents, closing parenthesis, "CR". */
 function moneyFromMatch(m: RegExpExecArray): Money | null {
   const negative = !!m[1] || !!m[5];
-  const amount = decimal(`${m[2].replace(/,/g, '')}.${m[3] ?? '00'}`);
+  const amount = toDecimal(`${m[2].replace(/,/g, '')}.${m[3] ?? '00'}`);
   if (amount === null) return null;
   return usd(negative && amount !== '0.00' ? `-${amount}` : amount);
 }
@@ -256,4 +256,11 @@ export function parseBillEmail(email: BillEmail): ParsedBillEmail {
     first ??= parsed;
   }
   return first!;
+}
+
+/** A real calendar day within a sensible range for a bill, or null. */
+function validYmd(y: number, m: number, d: number): Ymd | null {
+  if (y < 1990 || y > 2100) return null;
+  const day = ymd(y, m, d);
+  return isYmd(day) ? day : null;
 }

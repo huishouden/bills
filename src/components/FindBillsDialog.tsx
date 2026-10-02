@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Check, Plus } from 'lucide-react';
-import { dueWords } from '../lib/dates';
-import { formatMoney } from '../lib/money';
+import { formatMoney } from '@huishouden/pwa-kit/money';
+import { dueWords } from '@huishouden/pwa-kit/time';
 import { BILL_KINDS, KIND_LABELS, type BillKind, type SourceInput } from '../lib/model';
 import type { Proposal } from '../lib/emailSync';
 import type { DiscoverState } from '../data/useEmailCheck';
-import { Dialog, ErrorNotice, ghostButton, inputClass, primaryButton, secondaryButton } from './ui';
+import { Dialog, ErrorNotice, ghostButton, inputClass, primaryButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
   state: DiscoverState;

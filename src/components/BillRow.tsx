@@ -1,10 +1,10 @@
 import { Check, ExternalLink, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
-import { dueWords, shortDate } from '../lib/dates';
-import { formatMoney } from '../lib/money';
+import { formatMoney } from '@huishouden/pwa-kit/money';
+import { dueWords, shortDate } from '@huishouden/pwa-kit/time';
 import { KIND_LABELS, type Bill } from '../lib/model';
 import type { BillView } from '../lib/view';
 import { AutopayChip, KindIcon, personName } from './bits';
-import { iconButton, secondaryButton } from './ui';
+import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
   view: BillView;

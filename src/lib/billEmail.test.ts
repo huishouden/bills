@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseBillEmail, readAutopay, readDate, readDueDate } from './billEmail';
-import { htmlToText } from './html';
+import { htmlToText } from '@huishouden/pwa-kit/gmail';
 
 const DIR = join(import.meta.dir, '__fixtures__', 'emails');
 

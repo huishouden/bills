@@ -1,5 +1,5 @@
 import { parseBillEmail, type ParsedBillEmail } from './billEmail';
-import { toYmd } from './dates';
+import { toYmd } from '@huishouden/pwa-kit/time';
 import { discoveryQuery, fromCovers, guessKind, parseSender, senderName, sourceQuery, type Sender } from './gmailQuery';
 import { clean, type Bill, type BillDoc, type BillKind, type BillSource, type BillSyncDoc } from './model';
 
@@ -8,26 +8,9 @@ import { clean, type Bill, type BillDoc, type BillKind, type BillSource, type Bi
  * handed, so the same code runs against Gmail, the sample mailbox and test fixtures.
  */
 
-/** One email as the mailbox returns it. */
-export interface MailMessage {
-  id: string;
-  /** ms since epoch. */
-  date: number;
-  from: string;
-  subject: string;
-  text?: string;
-  html?: string;
-}
-
-/** Gmail, or a stand-in for it. */
-export interface Mailbox {
-  /** Message ids matching a Gmail search, newest first. */
-  search(query: string, max: number): Promise<string[]>;
-  /** One message with its text and HTML parts. */
-  get(id: string): Promise<MailMessage>;
-  /** Sender, subject and date only (cheaper; for discovery). */
-  headers(id: string): Promise<Omit<MailMessage, 'text' | 'html'>>;
-}
+/** One email, and Gmail or a stand-in for it: the kit's read-only Gmail shapes. */
+export type { MailMessage, Mailbox } from '@huishouden/pwa-kit/gmail';
+import type { Mailbox } from '@huishouden/pwa-kit/gmail';
 
 export interface ParsedMessage {
   id: string;

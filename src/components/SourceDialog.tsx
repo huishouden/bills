@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BILL_KINDS, KIND_LABELS, sourceProblem, type BillKind, type BillSource, type SourceInput } from '../lib/model';
-import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from './ui';
+import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
   source: BillSource | null;
