@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { decimal } from '../lib/money';
+import { toDecimal } from '@huishouden/pwa-kit/money';
 import { BILL_KINDS, KIND_LABELS, type Bill, type BillKind, type ManualBillInput, type Repeat } from '../lib/model';
-import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from './ui';
+import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
   bill: Bill | null;
@@ -30,7 +30,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
   const [problem, setProblem] = useState<string | null>(null);
 
   const save = () => {
-    const money = amount.trim() ? decimal(amount) : null;
+    const money = amount.trim() ? toDecimal(amount) : null;
     if (!label.trim()) return setProblem('Give it a name.');
     if (amount.trim() && money === null) return setProblem('The amount should look like 120.00.');
     if (payUrl.trim() && !payUrl.trim().startsWith('https://')) return setProblem('The pay link must start with https://');

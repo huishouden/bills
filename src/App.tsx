@@ -3,16 +3,15 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { signInSilently } from '@huishouden/pwa-kit/auth';
 import { markJoined, saveMyProfile, watchHousehold, type HouseholdState } from '@huishouden/pwa-kit/household';
 import { auth, db, googleClientId, signInWithGoogle, signOutEverywhere } from './data/firebase';
-import { forgetGmailToken } from './data/gmail';
+import { forgetGoogleToken } from '@huishouden/pwa-kit/google-token';
 import { useLiveStore } from './data/useLiveStore';
 import { useDemoStore } from './data/useDemoStore';
 import { DEMO_NOW } from './lib/demo';
-import { ClockProvider } from './clock';
+import { ClockProvider } from '@huishouden/pwa-kit/react/clock';
 import { BillsApp } from './BillsApp';
 import { Header } from './components/Header';
 import { PORTAL_URL } from './lib/portal';
-import { cardClass, primaryButton } from './components/ui';
-import { useToast } from './useToast';
+import { cardClass, primaryButton, useToast } from '@huishouden/pwa-kit/react/ui';
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -39,7 +38,7 @@ export default function App() {
     }
   }, []);
   const signOut = useCallback(() => {
-    forgetGmailToken();
+    forgetGoogleToken();
     void signOutEverywhere();
   }, []);
 

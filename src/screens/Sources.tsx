@@ -1,7 +1,7 @@
 import { Pencil, Plus, Search } from 'lucide-react';
 import { KindIcon } from '../components/bits';
 import { EmailStatus } from '../components/EmailStatus';
-import { cardClass, iconButton, primaryButton, secondaryButton } from '../components/ui';
+import { cardClass, iconButton, primaryButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 import { KIND_LABELS, type BillSource } from '../lib/model';
 import type { CheckState } from '../data/useEmailCheck';
 import type { BillsStore } from '../data/types';

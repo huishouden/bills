@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { discoverSources, syncFromMailbox, type Mailbox, type Proposal } from '../lib/emailSync';
-import { gmailError } from './gmail';
+import { gmailError } from '@huishouden/pwa-kit/gmail';
 import type { BillsStore } from './types';
 
 export type CheckState =
