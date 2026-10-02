@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/huishouden/bills/compare/v1.1.1...v1.2.0) (2026-10-02)
+
+
+### Features
+
+* error, speed and anonymous usage reports (pwa-kit observability) ([#10](https://github.com/huishouden/bills/issues/10)) ([017097e](https://github.com/huishouden/bills/commit/017097e804e7e7e1b9662e34c7138218bbda0313))
+* **roles:** helpers and kids are told only admins and members see the money; Bills' agenda items stay private (pwa-kit 0.40.0) ([#13](https://github.com/huishouden/bills/issues/13)) ([bdc1068](https://github.com/huishouden/bills/commit/bdc1068771957a115f2fb6780efead4cd124f1b3))
+
 ## [1.1.1](https://github.com/huishouden/bills/compare/v1.1.0...v1.1.1) (2026-10-02)
 
 
