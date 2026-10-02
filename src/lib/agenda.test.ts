@@ -32,6 +32,7 @@ describe('agendaItems for the sample household', () => {
       'Example Mutual upcoming',
       'Example Power Co upcoming',
       'Example Water District overdue',
+      'Hulu autopay',
     ]);
   });
 

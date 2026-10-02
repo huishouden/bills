@@ -11,6 +11,16 @@ test('upcoming', ({ page }) =>
     prepare: (p) => expect(p.getByRole('region', { name: 'Overdue' })).toBeVisible(),
   }));
 
+test('possible regular bills', ({ page }) =>
+  captureScreenshot(page, 'suggested-bills', {
+    fixedTime,
+    prepare: async (p) => {
+      const card = p.getByRole('region', { name: 'Possible regular bills' });
+      await card.scrollIntoViewIfNeeded();
+      await expect(card.getByRole('listitem', { name: 'Netflix' })).toBeVisible();
+    },
+  }));
+
 test('history', ({ page }) =>
   captureScreenshot(page, 'history', {
     fixedTime,

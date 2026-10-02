@@ -13,7 +13,7 @@ export const billRef = (id: string) => `bill:${id}`;
 
 type Item = Omit<AgendaInput, 'ref'>;
 
-const autopayText = (a: Autopay | null) => (a === null ? 'autopay unknown' : a.enrolled ? 'autopay on' : 'autopay off');
+const autopayText = (a: Autopay | null) => (a === null ? 'autopay unknown' : a.enrolled ? (a.via === 'card' ? 'autopay by card' : 'autopay on') : 'autopay off');
 
 /**
  * A bill still to pay, on its due date: what the Upcoming screen lists with a date. Paid,

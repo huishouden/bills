@@ -11,6 +11,10 @@ Live at https://huishouden-bills.web.app. It is also linked from the [Huishouden
 |---|---|
 | ![Overdue, this week and later this month, with autopay state and amounts](docs/screenshots/upcoming.png) | ![Senders of statement emails proposed as bill sources](docs/screenshots/find-bills.png) |
 
+| Possible regular bills | |
+|---|---|
+| ![Regular card charges offered as bills, with Add and Not a bill](docs/screenshots/suggested-bills.png) | |
+
 | History | Phone |
 |---|---|
 | ![Paid, autopaid and replaced bills](docs/screenshots/history.png) | ![Upcoming on a phone](docs/screenshots/phone-upcoming.png) |
@@ -56,6 +60,28 @@ Which senders are bills is household data in Firestore.
   bill show "—".
 - It reads the latest 8 messages per source within 60 days.
 
+## Bills found in card spending
+
+Bills also reads the household's card spending from Huishouden Spending (the last 400 days) and
+looks for regular charges with `@huishouden/pwa-kit/recurring`:
+
+- A charge counts when it comes back weekly, monthly or quarterly at least 3 times, or yearly twice
+  (365 ± 10 days apart), on a steady schedule.
+- The amount must stay within 10%. Utilities and insurance may vary.
+- Refunds, credits and card payments are left out. So are groceries, dining and fuel, unless the
+  same amount comes on time every time. A charge that has stopped coming drops out.
+
+Up to 5 new ones show in a **Possible regular bills** card under Upcoming. A charge is not offered
+when a bill or bill source with the same merchant name already exists (bills also need a similar
+amount). **Add** makes a repeating bill: same name, amount and cadence, due when the next charge is
+expected, autopay by card. **Not a bill** hides it for the whole household. Both have Undo. When a
+repeating bill on autopay passes its due date, the next one is added when someone next opens the
+app.
+
+The line under the headline, "Subscriptions: $X/month across N", adds up the subscriptions found
+in card spending at their monthly cost. It includes the ones already added and leaves out the ones
+marked Not a bill.
+
 ## Data
 
 Signed-in members of a Huishouden household read and write these documents under
@@ -64,8 +90,12 @@ Signed-in members of a Huishouden household read and write these documents under
 - `billSources/{id}`: name, kind, `from`/`subject`/`label` match, pay link, autopay when the emails
   are silent.
 - `bills/{id}` (`bill/v1`): kind, label, due, `amountDue` `{amount, currency}`, `status`
-  (`due`/`paid`/`credit`/`unknown`), `autopay` `{enrolled, nextDraft?}`, statement period, how it
+  (`due`/`paid`/`credit`/`unknown`), `autopay` `{enrolled, nextDraft?, via?: 'card'}`, `repeat` (weekly, monthly, quarterly, yearly) for bills added by hand, statement period, how it
   was paid, and `dismissed`.
+- `billSuggestions/{merchant}`: a member's answer to a suggested bill, `added` (with the bill's id)
+  or `dismissed`, with the name, who and when.
+- `spendingTransactions` (Huishouden Spending's, read only): date, description, amount, category
+  and type, for suggested bills.
 - `billSync/{memberEmail}`: when that member last checked, with counts and per-source errors.
 - `agenda/{id}` (app `bills`): each unpaid bill with a due date, as an all-day `bill` item on that
   date for the household agenda the portal shows. Title is the bill's name; detail is the amount and
@@ -83,7 +113,7 @@ Household data lives in the household's own Firestore documents, visible only to
 To catch problems early, the app sends reports to New Relic (free tier) through
 `@huishouden/pwa-kit/observability`: errors (emails, ids, query strings and long numbers removed),
 Core Web Vitals and page loads, the app version, device type, and the country and region New Relic
-derives from the request; and anonymous usage counts per visit: `check email`, `mark bill paid`, `add bill`, `save bill source`, and which tab is open. Households are counted by a
+derives from the request; and anonymous usage counts per visit: `check email`, `mark bill paid`, `add bill`, `save bill source`, `add suggested bill`, `dismiss suggested bill`, and which tab is open. Households are counted by a
 hash of the id. No names, emails, entries, free text or precise location, and no cookie or stored
 id: nothing links one visit to the next. When the browser sends Global Privacy Control or Do Not
 Track, usage counts are skipped; errors and speed still go. Builds without the `VITE_NEWRELIC_*`
