@@ -9,6 +9,7 @@ import { readError } from '@huishouden/pwa-kit/feedback';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
 import { nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions, BillsStore, MailAccess } from './types';
+import { track } from '@huishouden/pwa-kit/observability';
 
 const clock = () => Date.now();
 
@@ -91,6 +92,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     const billRef = (id: string) => doc(db, base, 'bills', id);
     return {
       markPaid: (bill) => {
+        track('mark bill paid');
         const now = clock();
         report(setDoc(billRef(bill.id), paidDoc(bill, me, now)));
         agenda.unpublish(bill.id);
@@ -115,6 +117,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         agenda.publish({ id: bill.id, ...data });
       },
       saveManualBill: (id, input) => {
+        track('add bill');
         const now = clock();
         const existing = id ? billsRef.current.find((b) => b.id === id) : undefined;
         const ref = id ? billRef(id) : doc(collection(db, base, 'bills'));
@@ -131,6 +134,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         agenda.publish(bill);
       },
       saveSource: (id, input) => {
+        track('save bill source');
         const now = clock();
         const ref = id ? doc(db, base, 'billSources', id) : doc(collection(db, base, 'billSources'));
         const existing = id ? sourcesRef.current.find((s) => s.id === id) : undefined;
@@ -162,6 +166,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         };
       },
       applySync: async (result) => {
+        track('check email');
         const writes = result.writes.slice(0, 450);
         const batch = writeBatch(db);
         for (const w of writes) batch.set(billRef(w.id), w.data);
