@@ -1,0 +1,21 @@
+{
+  "email": {
+    "from": "Example Commons HOA <office@hoa.example.com>",
+    "subject": "Assessment notice",
+    "date": "2031-07-20T12:00:00Z",
+    "text": "Quarterly assessment\nAssessment due 8/1/31. Amount: $300.00\nOur records show you are not enrolled in automatic payments."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "300.00",
+      "currency": "USD"
+    },
+    "due": "2031-08-01",
+    "autopay": {
+      "enrolled": false
+    },
+    "period": null,
+    "paid": null
+  }
+}

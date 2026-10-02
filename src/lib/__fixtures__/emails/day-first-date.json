@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your e-bill",
+    "date": "2031-02-01T12:00:00Z",
+    "text": "Balance due: $1,250.50. Payment due 28 February 2031."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "1250.50",
+      "currency": "USD"
+    },
+    "due": "2031-02-28",
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

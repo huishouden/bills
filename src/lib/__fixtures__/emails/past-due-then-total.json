@@ -1,0 +1,22 @@
+{
+  "email": {
+    "from": "Example Water District <billing@water.example.com>",
+    "subject": "Your quarterly water bill",
+    "date": "2031-04-05T12:00:00Z",
+    "text": "Service period: 01/01/2031 to 03/31/2031\nPrevious balance $88.00\nPayment received - thank you ($88.00)\nPast due amount $0.00\nCurrent charges $90.00\nTotal amount due $90.00\nDue date 04/25/2031"
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "90.00",
+      "currency": "USD"
+    },
+    "due": "2031-04-25",
+    "autopay": null,
+    "period": {
+      "start": "2031-01-01",
+      "end": "2031-03-31"
+    },
+    "paid": null
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your bill is ready",
+    "date": "2031-11-02T12:00:00Z",
+    "text": "Amount due: $55.00\nDue by Nov 21, 2031\nAutoPay is off for this account."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "55.00",
+      "currency": "USD"
+    },
+    "due": "2031-11-21",
+    "autopay": {
+      "enrolled": false
+    },
+    "period": null,
+    "paid": null
+  }
+}

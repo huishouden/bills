@@ -1,0 +1,8 @@
+{
+  "projects": { "default": "huishouden-piekstra" },
+  "targets": {
+    "huishouden-piekstra": {
+      "hosting": { "bills": ["huishouden-bills"] }
+    }
+  }
+}

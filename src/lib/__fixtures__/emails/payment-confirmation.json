@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Water District <payments@water.example.com>",
+    "subject": "Thank you for your payment",
+    "date": "2031-05-18T15:00:00Z",
+    "text": "We received your payment of $90.00 on May 18, 2031. Your new balance is $0.00.\nConfirmation number: EXAMPLE-0001"
+  },
+  "expected": {
+    "kind": "payment",
+    "amountDue": null,
+    "due": null,
+    "autopay": null,
+    "period": null,
+    "paid": {
+      "amount": "90.00",
+      "currency": "USD"
+    }
+  }
+}

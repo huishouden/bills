@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your bill is ready to view",
+    "date": "2031-12-20T12:00:00Z",
+    "text": "Amount due $60.00, due January 10. Pay online at example.com."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "60.00",
+      "currency": "USD"
+    },
+    "due": "2032-01-10",
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

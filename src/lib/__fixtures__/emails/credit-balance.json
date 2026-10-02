@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your statement is ready",
+    "date": "2031-08-03T12:00:00Z",
+    "text": "Your account has a credit balance of $15.00. No payment is due this month."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "-15.00",
+      "currency": "USD"
+    },
+    "due": null,
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}
