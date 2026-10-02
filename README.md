@@ -77,6 +77,20 @@ The project's Firestore rules live in `huishouden/rules`.
 Nothing from a mailbox is stored except these parsed fields and the Gmail message id. The message
 id lets the member who checked open the email.
 
+## Privacy
+
+Household data lives in the household's own Firestore documents, visible only to its members.
+To catch problems early, the app sends reports to New Relic (free tier) through
+`@huishouden/pwa-kit/observability`: errors (emails, ids, query strings and long numbers removed),
+Core Web Vitals and page loads, the app version, device type, and the country and region New Relic
+derives from the request; and anonymous usage counts per visit: `check email`, `mark bill paid`, `add bill`, `save bill source`, and which tab is open. Households are counted by a
+hash of the id. No names, emails, entries, free text or precise location, and no cookie or stored
+id: nothing links one visit to the next. When the browser sends Global Privacy Control or Do Not
+Track, usage counts are skipped; errors and speed still go. Builds without the `VITE_NEWRELIC_*`
+repo variables (local, staging) send nothing. The page people see is
+[huishouden-piekstra.web.app/privacy](https://huishouden-piekstra.web.app/privacy); details in pwa-kit
+[docs/observability.md](https://github.com/huishouden/pwa-kit/blob/main/docs/observability.md).
+
 ## Develop
 
 ```sh
