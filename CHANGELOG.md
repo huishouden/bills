@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/huishouden/bills/compare/v1.0.1...v1.1.0) (2026-10-02)
+
+
+### Features
+
+* publish unpaid bills to the household agenda ([#6](https://github.com/huishouden/bills/issues/6)) ([a8dbbf1](https://github.com/huishouden/bills/commit/a8dbbf1601c2a0371a6c711636bdd39314cf7018))
+
 ## [1.0.1](https://github.com/huishouden/bills/compare/v1.0.0...v1.0.1) (2026-10-02)
 
 
