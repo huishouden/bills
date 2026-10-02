@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { manualBillDoc, sourceDoc, withoutId, type Bill, type BillSource, type BillSync } from '../lib/model';
 import { auth, db } from './firebase';
-import { gmailMailbox, requestGmailToken, storedGmailToken } from './gmail';
+import { readError } from '@huishouden/pwa-kit/feedback';
+import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
 import { nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions, BillsStore, MailAccess } from './types';
 
@@ -132,11 +133,4 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   );
 
   return { data: { bills, sources, syncs }, ready: answered.bills && answered.sources, actions, mail, me, members, clock, sample: false };
-}
-
-export function readError(e: unknown, prefix: string): string {
-  const code = (e as { code?: string })?.code;
-  if (code === 'permission-denied') return `${prefix}: this household doesn't allow it yet.`;
-  if (code === 'unavailable') return `${prefix}: offline. It will retry when the connection is back.`;
-  return `${prefix}.`;
 }

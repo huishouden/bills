@@ -1,4 +1,4 @@
-import { addMonths } from '../lib/dates';
+import { addMonths } from '@huishouden/pwa-kit/time';
 import { clean, type Bill, type BillDoc, withoutId } from '../lib/model';
 
 const STEP = { monthly: 1, quarterly: 3, yearly: 12 } as const;

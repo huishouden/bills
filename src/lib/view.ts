@@ -1,5 +1,5 @@
-import { daysBetween } from './dates';
-import { sumMoney } from './money';
+import { sumMoney } from '@huishouden/pwa-kit/money';
+import { daysBetween } from '@huishouden/pwa-kit/time';
 import type { Bill, Money, Ymd } from './model';
 
 /**

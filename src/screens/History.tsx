@@ -1,5 +1,5 @@
 import { BillRow } from '../components/BillRow';
-import { cardClass } from '../components/ui';
+import { cardClass } from '@huishouden/pwa-kit/react/ui';
 import type { Bill } from '../lib/model';
 import { history, type BillView } from '../lib/view';
 
