@@ -54,3 +54,74 @@ test.describe('as a helper', () => {
     expect(reads.filter((u) => u.includes('firestore'))).toEqual([]);
   });
 });
+
+// Possible regular bills: charges seeded into the household's card spending (as Huishouden Spending
+// stores them) under a merchant unique to this run show up as a suggestion, and Add makes the bill.
+test.describe('suggested bills from card spending', () => {
+  const PROJECT = 'huishouden-staging';
+  const docs = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/households/test-household`;
+  // Letters only: digits in a merchant name read as a store number and are dropped.
+  const tag = Date.now().toString(26).replace(/[0-9]/g, (d) => 'qrstuvwxyz'[Number(d)]);
+  const merchant = `TESTSTREAM ${tag.toUpperCase()}`;
+  const name = `Teststream ${tag.charAt(0).toUpperCase()}${tag.slice(1)}`;
+  const key = `teststream-${tag}`;
+  const ids = [0, 1, 2, 3].map((i) => `e2e-${tag}-${i}`);
+
+  const admin = async (method: string, path: string, body?: object) => {
+    const res = await fetch(`${docs}/${path}`, {
+      method,
+      headers: { authorization: `Bearer ${process.env.HH_STAGING_ACCESS_TOKEN}`, 'content-type': 'application/json', 'x-goog-user-project': PROJECT },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok && res.status !== 404) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
+  };
+  const ymdMonthsAgo = (months: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - 5);
+    d.setMonth(d.getMonth() - months);
+    return d.toISOString().slice(0, 10);
+  };
+
+  test.beforeAll(async () => {
+    for (const [i, id] of ids.entries()) {
+      const str = (stringValue: string) => ({ stringValue });
+      await admin('PATCH', `spendingTransactions/${id}`, {
+        fields: {
+          date: str(ymdMonthsAgo(3 - i)),
+          description: str(merchant),
+          amount: { doubleValue: 14.99 },
+          category: str('Subscriptions & Tech'),
+          card: str('Test Card'),
+          type: str('Sale'),
+          source: str('statement'),
+          createdAt: { integerValue: String(Date.now()) },
+          by: str('test-a@example.com'),
+        },
+      });
+    }
+  });
+
+  test.afterAll(async () => {
+    for (const id of ids) await admin('DELETE', `spendingTransactions/${id}`);
+    await admin('DELETE', `billSuggestions/${key}`);
+  });
+
+  test('a regular card charge is suggested, and Add makes a repeating card bill', async ({ page }) => {
+    await signInTestUser(page, { email: 'test-a@example.com' });
+    const card = page.getByRole('region', { name: 'Possible regular bills' });
+    const row = card.getByRole('listitem', { name });
+    await expect(row).toContainText('Monthly, $14.99', { timeout: 20_000 });
+    await row.getByRole('button', { name: `Add ${name}` }).click();
+    await expect(page.getByText(`Added ${name}`)).toBeVisible();
+    const bill = page.getByRole('listitem', { name }).filter({ hasText: 'Autopay by card' });
+    await expect(bill).toContainText('$14.99');
+
+    // Saved in the household: after a reload the bill is there and it is not suggested again.
+    await page.reload();
+    await expect(page.getByRole('listitem', { name }).filter({ hasText: 'Autopay by card' })).toBeVisible({ timeout: 20_000 });
+    await expect(card.getByRole('listitem', { name })).toHaveCount(0);
+
+    await page.getByRole('button', { name: `Remove ${name}` }).click();
+    await expect(page.getByText(`Removed ${name}`)).toBeVisible();
+  });
+});

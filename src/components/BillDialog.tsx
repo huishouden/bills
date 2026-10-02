@@ -13,6 +13,7 @@ interface Props {
 
 const REPEATS: [Repeat | null, string][] = [
   [null, 'Once'],
+  ['weekly', 'Weekly'],
   ['monthly', 'Monthly'],
   ['quarterly', 'Quarterly'],
   ['yearly', 'Yearly'],

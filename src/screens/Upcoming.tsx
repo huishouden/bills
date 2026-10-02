@@ -8,6 +8,9 @@ import type { Bill } from '../lib/model';
 import { headline, upcoming, type BillView } from '../lib/view';
 import type { CheckState } from '../data/useEmailCheck';
 import type { BillsStore } from '../data/types';
+import { SubscriptionsLine, SuggestedBills } from '../components/SuggestedBills';
+import type { Suggestions } from '../lib/suggestions';
+import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
 
 interface Props {
   store: BillsStore;
@@ -21,6 +24,9 @@ interface Props {
   onEdit: (bill: Bill) => void;
   onMarkPaid: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
+  suggested: Suggestions;
+  onAddSuggestion: (c: RecurringCandidate) => void;
+  onDismissSuggestion: (c: RecurringCandidate) => void;
 }
 
 function Group({ title, children, count }: { title: string; children: ReactNode; count: number }) {
@@ -34,7 +40,7 @@ function Group({ title, children, count }: { title: string; children: ReactNode;
 }
 
 /** The next 30 days: overdue first, then this week, then the rest of the month. */
-export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onRemove }: Props) {
+export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onRemove, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
   const u = upcoming(views);
   const h = headline(u);
   const { sources, syncs } = store.data;
@@ -42,53 +48,57 @@ export function Upcoming({ store, views, today, now, check, onCheck, onFind, onA
   const empty = !sources.length && !views.length;
 
   return (
-    <div className={`${cardClass} p-5 sm:p-6`}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-semibold text-stone-800">{h.text}</h2>
-          {h.total && <p className="mt-1 text-lg text-stone-600 tabular-nums">Total {formatMoney(h.total)}</p>}
-        </div>
-        {!empty && (
-          <button type="button" className={secondaryButton} onClick={onAdd}>
-            <Plus size={18} /> Add a bill
-          </button>
-        )}
-      </div>
-      {!empty && (
-        <div className="mb-5 rounded-xl border border-stone-200 p-3">
-          <EmailStatus syncs={syncs} state={check} me={store.me} now={now} note={store.mail.note} hasSources={sources.length > 0} onCheck={onCheck} />
-        </div>
-      )}
-      {empty ? (
-        <div className="space-y-3 py-4 text-lg text-stone-600">
-          <p>Bills reads the statement emails providers send, so each bill's amount, due date and autopay show up here on their own. Bills with no email can be added by hand.</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className={primaryButton} onClick={onFind}>
-              <Search size={18} /> Find bills in my email
-            </button>
+    <>
+      <div className={`${cardClass} p-5 sm:p-6`}>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-2xl font-semibold text-stone-800">{h.text}</h2>
+            {h.total && <p className="mt-1 text-lg text-stone-600 tabular-nums">Total {formatMoney(h.total)}</p>}
+            <SubscriptionsLine {...suggested.subscriptions} />
+          </div>
+          {!empty && (
             <button type="button" className={secondaryButton} onClick={onAdd}>
               <Plus size={18} /> Add a bill
             </button>
+          )}
+        </div>
+        {!empty && (
+          <div className="mb-5 rounded-xl border border-stone-200 p-3">
+            <EmailStatus syncs={syncs} state={check} me={store.me} now={now} note={store.mail.note} hasSources={sources.length > 0} onCheck={onCheck} />
           </div>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          <Group title="Overdue" count={u.overdue.length}>
-            {u.overdue.map(row)}
-          </Group>
-          <Group title="This week" count={u.week.length}>
-            {u.week.map(row)}
-          </Group>
-          <Group title="Later this month" count={u.later.length}>
-            {u.later.map(row)}
-          </Group>
-          <Group title="No due date" count={u.noDate.length}>
-            {u.noDate.map(row)}
-          </Group>
-          {!h.count && !u.noDate.length && <p className="text-lg text-stone-600">Nothing due in the next 30 days.</p>}
-          {u.beyond > 0 && <p className="px-1 text-base text-stone-600">{u.beyond} more due after the next 30 days.</p>}
-        </div>
-      )}
-    </div>
+        )}
+        {empty ? (
+          <div className="space-y-3 py-4 text-lg text-stone-600">
+            <p>Bills reads the statement emails providers send, so each bill's amount, due date and autopay show up here on their own. Bills with no email can be added by hand.</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className={primaryButton} onClick={onFind}>
+                <Search size={18} /> Find bills in my email
+              </button>
+              <button type="button" className={secondaryButton} onClick={onAdd}>
+                <Plus size={18} /> Add a bill
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <Group title="Overdue" count={u.overdue.length}>
+              {u.overdue.map(row)}
+            </Group>
+            <Group title="This week" count={u.week.length}>
+              {u.week.map(row)}
+            </Group>
+            <Group title="Later this month" count={u.later.length}>
+              {u.later.map(row)}
+            </Group>
+            <Group title="No due date" count={u.noDate.length}>
+              {u.noDate.map(row)}
+            </Group>
+            {!h.count && !u.noDate.length && <p className="text-lg text-stone-600">Nothing due in the next 30 days.</p>}
+            {u.beyond > 0 && <p className="px-1 text-base text-stone-600">{u.beyond} more due after the next 30 days.</p>}
+          </div>
+        )}
+      </div>
+      <SuggestedBills fresh={suggested.fresh} all={suggested.all} today={today} onAdd={onAddSuggestion} onDismiss={onDismissSuggestion} />
+    </>
   );
 }

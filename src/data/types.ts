@@ -1,5 +1,6 @@
 import type { BillsData } from '../lib/demo';
 import type { Mailbox, SyncResult } from '../lib/emailSync';
+import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
 import type { Bill, BillSource, ManualBillInput, SourceInput } from '../lib/model';
 
 export type { BillsData };
@@ -18,6 +19,10 @@ export interface BillsActions {
   /** Deletes a source and its unpaid bills. Returns the undo. */
   deleteSource(source: BillSource): () => void;
   applySync(result: SyncResult): Promise<void>;
+  /** A regular charge from card spending becomes a repeating bill, and is never suggested again. Returns the undo. */
+  addSuggestion(candidate: RecurringCandidate, input: ManualBillInput): () => void;
+  /** "Not a bill": never suggested again. Returns the undo. */
+  dismissSuggestion(candidate: RecurringCandidate, name: string): () => void;
 }
 
 /** Where email comes from: the member's Gmail, or the sample mailbox. */

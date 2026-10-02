@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
 import { manualBillDoc, sourceDoc, type Bill } from '../lib/model';
+import { suggestionId } from '../lib/suggestions';
 import { sampleMailbox } from '../lib/sampleMailbox';
 import { gmailMailbox } from '@huishouden/pwa-kit/gmail';
 import { nextRepeat, paidDoc, unpaidDoc } from './build';
@@ -61,6 +62,21 @@ export function useDemoStore(clock: () => number): BillsStore {
           return { ...d, sources: d.sources.filter((s) => s.id !== source.id), bills: d.bills.filter((b) => !removed.includes(b)) };
         });
         return () => patch((d) => ({ ...d, sources: [...d.sources, source], bills: [...d.bills, ...removed] }));
+      },
+      addSuggestion: (candidate, input) => {
+        const now = clock();
+        const id = newId();
+        const key = suggestionId(candidate.merchantKey);
+        patch((d) => ({
+          ...upsertBill(d, { id, ...manualBillDoc(input, me, now, now) }),
+          answers: [...d.answers.filter((a) => a.id !== key), { id: key, status: 'added', name: input.label, billId: id, by: me, at: now }],
+        }));
+        return () => patch((d) => ({ ...d, bills: d.bills.filter((b) => b.id !== id), answers: d.answers.filter((a) => a.id !== key) }));
+      },
+      dismissSuggestion: (candidate, name) => {
+        const key = suggestionId(candidate.merchantKey);
+        patch((d) => ({ ...d, answers: [...d.answers.filter((a) => a.id !== key), { id: key, status: 'dismissed', name, by: me, at: clock() }] }));
+        return () => patch((d) => ({ ...d, answers: d.answers.filter((a) => a.id !== key) }));
       },
       applySync: async (result) =>
         patch((d) => {

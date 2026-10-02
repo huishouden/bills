@@ -9,6 +9,8 @@ import { Toast, type ToastState } from '@huishouden/pwa-kit/react/ui';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import type { Bill, BillSource } from './lib/model';
 import { viewBills } from './lib/view';
+import { suggestionBill, suggestionLabel, suggestions } from './lib/suggestions';
+import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
 import { useEmailCheck } from './data/useEmailCheck';
 import type { BillsStore } from './data/types';
 import { History } from './screens/History';
@@ -47,6 +49,8 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   const email = useEmailCheck(store);
   const views = useMemo(() => viewBills(store.data.bills, today), [store.data.bills, today]);
   const { actions } = store;
+  const { charges, bills, sources, answers } = store.data;
+  const suggested = useMemo(() => suggestions(charges, today, bills, sources, answers), [charges, today, bills, sources, answers]);
 
   useEffect(() => {
     document.title = 'Huishouden Bills';
@@ -64,6 +68,15 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   const remove = (bill: Bill) => {
     actions.removeBill(bill);
     notify(`Removed ${bill.label}`, () => actions.restoreBill(bill));
+  };
+
+  const addSuggestion = (c: RecurringCandidate) => {
+    const input = suggestionBill(c, suggested.all);
+    notify(`Added ${input.label}`, actions.addSuggestion(c, input));
+  };
+  const dismissSuggestion = (c: RecurringCandidate) => {
+    const name = suggestionLabel(c, suggested.all);
+    notify(`${name} won't be suggested again`, actions.dismissSuggestion(c, name));
   };
 
   let content: ReactNode;
@@ -85,6 +98,9 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
         onEdit={setBillDialog}
         onMarkPaid={markPaid}
         onRemove={remove}
+        suggested={suggested}
+        onAddSuggestion={addSuggestion}
+        onDismissSuggestion={dismissSuggestion}
       />
     );
 

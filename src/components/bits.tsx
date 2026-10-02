@@ -25,9 +25,9 @@ export function KindIcon({ kind, attention, size = 22 }: { kind: BillKind; atten
   );
 }
 
-/** "Autopay on", "Autopay off", "Autopay unknown": off and unknown take the attention colour when it matters. */
+/** "Autopay on" (or "by card"), "Autopay off", "Autopay unknown": off and unknown take the attention colour when it matters. */
 export function AutopayChip({ autopay, attention }: { autopay: Autopay | null; attention?: boolean }) {
-  const text = autopay === null ? 'Autopay unknown' : autopay.enrolled ? 'Autopay on' : 'Autopay off';
+  const text = autopay === null ? 'Autopay unknown' : autopay.enrolled ? (autopay.via === 'card' ? 'Autopay by card' : 'Autopay on') : 'Autopay off';
   const tone = autopay?.enrolled
     ? 'border-forest-200 bg-forest-50 text-forest-700'
     : attention
