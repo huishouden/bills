@@ -92,3 +92,11 @@ describe('billAgenda', () => {
     expect(billAgenda(bill({}), [], NOW, 'https://example.com/')[0].url).toBe('https://example.com/');
   });
 });
+
+describe('privacy', () => {
+  test('every item Bills publishes is stored private: helpers and kids never see the household’s bills', () => {
+    const items = agendaItems(demoData().bills, NOW);
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) expect(agendaDoc(AGENDA_APP, item, 'sam@example.com', NOW).private).toBe(true);
+  });
+});
