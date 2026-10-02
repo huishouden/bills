@@ -10,9 +10,15 @@ on:
     # everything. See pwa-kit templates/ci.yml.
     paths-ignore: [CHANGELOG.md, package.json]
   workflow_dispatch:
+    inputs:
+      staging-ref:
+        description: Deploy this branch, tag or SHA to staging (leave empty to deploy main to production)
+        type: string
+        default: ''
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A manual staging deploy from main must not cancel main's production deploy.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.staging-ref }}
   cancel-in-progress: true
 
 permissions:
@@ -28,6 +34,7 @@ jobs:
     with:
       hosting-target: bills
       site-url: https://huishouden-bills.web.app
+      staging-ref: ${{ inputs.staging-ref }}
 
   release:
     uses: huishouden/pwa-kit/.github/workflows/release.yml@v0
