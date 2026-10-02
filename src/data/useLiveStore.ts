@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { manualBillDoc, sourceDoc, withoutId, type Bill, type BillSource, type BillSync } from '../lib/model';
+import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
+import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
@@ -18,6 +20,8 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   const [sources, setSources] = useState<BillSource[]>([]);
   const [syncs, setSyncs] = useState<BillSync[]>([]);
   const [answered, setAnswered] = useState({ bills: false, sources: false });
+  // The first bills snapshot from the server (not the offline cache): when the agenda is reconciled.
+  const [billsFromServer, setBillsFromServer] = useState(false);
   const billsRef = useRef<Bill[]>([]);
   billsRef.current = bills;
   const sourcesRef = useRef<BillSource[]>([]);
@@ -31,9 +35,11 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     const unsubs = [
       onSnapshot(
         collection(db, base, 'bills'),
+        { includeMetadataChanges: true },
         (s) => {
           setBills(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Bill, 'id'>) })));
           setAnswered((a) => ({ ...a, bills: true }));
+          if (!s.metadata.fromCache) setBillsFromServer(true);
         },
         (e) => {
           setAnswered((a) => ({ ...a, bills: true }));
@@ -60,6 +66,25 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     return () => unsubs.forEach((u) => u());
   }, [base]);
 
+  // The household agenda follows every write. It is a copy for the portal: a failed agenda write
+  // is logged, never shown, and the next open's reconcile repairs it.
+  const agenda = useMemo(() => {
+    const warn = (e: unknown) => console.warn('Agenda update failed', e);
+    return {
+      publish: (bill: Bill) =>
+        void replaceAgenda(db, householdId, AGENDA_APP, agendaRef(bill.id), billAgenda(bill, billsRef.current, clock()), { by: me }).catch(warn),
+      unpublish: (id: string) => void removeAgenda(db, householdId, AGENDA_APP, agendaRef(id)).catch(warn),
+      sync: (bills: Bill[]) => void syncAgenda(db, householdId, AGENDA_APP, agendaItems(bills, clock()), { by: me }).catch(warn),
+    };
+  }, [householdId, me]);
+
+  const synced = useRef(false);
+  useEffect(() => {
+    if (!billsFromServer || synced.current) return;
+    synced.current = true;
+    agenda.sync(billsRef.current);
+  }, [billsFromServer, agenda]);
+
   const actions = useMemo<BillsActions>(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));
     const billRef = (id: string) => doc(db, base, 'bills', id);
@@ -67,24 +92,43 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       markPaid: (bill) => {
         const now = clock();
         report(setDoc(billRef(bill.id), paidDoc(bill, me, now)));
+        agenda.unpublish(bill.id);
         const next = nextRepeat(bill, me, now);
         const nextRef = next ? doc(collection(db, base, 'bills')) : null;
-        if (next && nextRef) report(setDoc(nextRef, next));
+        if (next && nextRef) {
+          report(setDoc(nextRef, next));
+          agenda.publish({ id: nextRef.id, ...next });
+        }
         return () => {
           report(setDoc(billRef(bill.id), withoutId(bill)));
-          if (nextRef) report(deleteDoc(nextRef));
+          agenda.publish(bill);
+          if (nextRef) {
+            report(deleteDoc(nextRef));
+            agenda.unpublish(nextRef.id);
+          }
         };
       },
-      markUnpaid: (bill) => report(setDoc(billRef(bill.id), unpaidDoc(bill, clock()))),
+      markUnpaid: (bill) => {
+        const data = unpaidDoc(bill, clock());
+        report(setDoc(billRef(bill.id), data));
+        agenda.publish({ id: bill.id, ...data });
+      },
       saveManualBill: (id, input) => {
         const now = clock();
         const existing = id ? billsRef.current.find((b) => b.id === id) : undefined;
         const ref = id ? billRef(id) : doc(collection(db, base, 'bills'));
-        report(setDoc(ref, manualBillDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now, existing)));
+        const data = manualBillDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now, existing);
+        report(setDoc(ref, data));
+        agenda.publish({ id: ref.id, ...data });
       },
-      removeBill: (bill) =>
-        report(bill.source === 'manual' ? deleteDoc(billRef(bill.id)) : updateDoc(billRef(bill.id), { dismissed: true, updatedAt: clock() })),
-      restoreBill: (bill) => report(setDoc(billRef(bill.id), withoutId(bill))),
+      removeBill: (bill) => {
+        report(bill.source === 'manual' ? deleteDoc(billRef(bill.id)) : updateDoc(billRef(bill.id), { dismissed: true, updatedAt: clock() }));
+        agenda.unpublish(bill.id);
+      },
+      restoreBill: (bill) => {
+        report(setDoc(billRef(bill.id), withoutId(bill)));
+        agenda.publish(bill);
+      },
       saveSource: (id, input) => {
         const now = clock();
         const ref = id ? doc(db, base, 'billSources', id) : doc(collection(db, base, 'billSources'));
@@ -94,7 +138,10 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         batch.set(ref, data);
         // A renamed or re-kinded source renames its bills too.
         if (existing && (existing.name !== data.name || existing.kind !== data.kind)) {
-          for (const b of billsRef.current.filter((x) => x.sourceId === id)) batch.update(billRef(b.id), { label: data.name, kind: data.kind, updatedAt: now });
+          for (const b of billsRef.current.filter((x) => x.sourceId === id)) {
+            batch.update(billRef(b.id), { label: data.name, kind: data.kind, updatedAt: now });
+            agenda.publish({ ...b, label: data.name, kind: data.kind, updatedAt: now });
+          }
         }
         report(batch.commit());
       },
@@ -104,21 +151,27 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         batch.delete(doc(db, base, 'billSources', source.id));
         for (const b of unpaid) batch.delete(billRef(b.id));
         report(batch.commit());
+        for (const b of unpaid) agenda.unpublish(b.id);
         return () => {
           const undo = writeBatch(db);
           undo.set(doc(db, base, 'billSources', source.id), withoutId(source));
           for (const b of unpaid) undo.set(billRef(b.id), withoutId(b));
           report(undo.commit());
+          for (const b of unpaid) agenda.publish(b);
         };
       },
       applySync: async (result) => {
+        const writes = result.writes.slice(0, 450);
         const batch = writeBatch(db);
-        for (const w of result.writes.slice(0, 450)) batch.set(billRef(w.id), w.data);
+        for (const w of writes) batch.set(billRef(w.id), w.data);
         batch.set(doc(db, base, 'billSync', me), result.status);
         await batch.commit();
+        // A sync can add statements and replace older ones, so it reconciles the whole agenda.
+        const written = new Map(writes.map((w) => [w.id, { id: w.id, ...w.data }]));
+        agenda.sync([...billsRef.current.filter((b) => !written.has(b.id)), ...written.values()]);
       },
     };
-  }, [base, me]);
+  }, [base, me, agenda]);
 
   const mail = useMemo<MailAccess>(
     () => ({

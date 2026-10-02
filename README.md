@@ -67,8 +67,13 @@ Signed-in members of a Huishouden household read and write these documents under
   (`due`/`paid`/`credit`/`unknown`), `autopay` `{enrolled, nextDraft?}`, statement period, how it
   was paid, and `dismissed`.
 - `billSync/{memberEmail}`: when that member last checked, with counts and per-source errors.
+- `agenda/{id}` (app `bills`): each unpaid bill with a due date, as an all-day `bill` item on that
+  date for the household agenda the portal shows. Title is the bill's name; detail is the amount and
+  autopay state ("$84.20, autopay off"); status is `overdue` or `upcoming`, and absent for bills on
+  autopay. Written when a bill is saved, paid, removed or read from email, and reconciled each time
+  the app opens. Paid, credited, autopaid and replaced bills leave it.
 
-The project's Firestore rules live in the repo that owns the rules file (`huishouden/tasks`).
+The project's Firestore rules live in `huishouden/rules`.
 Nothing from a mailbox is stored except these parsed fields and the Gmail message id. The message
 id lets the member who checked open the email.
 
