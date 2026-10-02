@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/huishouden/bills/compare/v1.2.0...v1.3.0) (2026-10-02)
+
+
+### Features
+
+* possible regular bills from the household's card spending (pwa-kit 0.42.0) ([#14](https://github.com/huishouden/bills/issues/14)) ([6aa0945](https://github.com/huishouden/bills/commit/6aa09451e03af7e99441124b821d894fabf7fe3f))
+
 ## [1.2.0](https://github.com/huishouden/bills/compare/v1.1.1...v1.2.0) (2026-10-02)
 
 
