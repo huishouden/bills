@@ -55,3 +55,6 @@ test('phone: upcoming', async ({ page }) => {
     prepare: (p) => expect(p.getByRole('region', { name: 'Overdue' })).toBeVisible(),
   });
 });
+
+// What a helper or kid sees: no money, a way back to the portal.
+test('helper', ({ page }) => captureScreenshot(page, 'helper', { path: '/?sample=helper' }));
