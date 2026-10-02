@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { deleteDoc, setDoc, updateDoc, writeBatch } from '@huishouden/pwa-kit/firestore';
 import { manualBillDoc, sourceDoc, withoutId, type Bill, type BillSource, type BillSync } from '../lib/model';
 import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
 import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
