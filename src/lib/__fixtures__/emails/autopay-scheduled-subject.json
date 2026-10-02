@@ -1,0 +1,22 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your automatic payment is scheduled",
+    "date": "2031-10-05T12:00:00Z",
+    "text": "Your AutoPay of $130.00 is scheduled for October 15, 2031. Please do not send a payment."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "130.00",
+      "currency": "USD"
+    },
+    "due": "2031-10-15",
+    "autopay": {
+      "enrolled": true,
+      "nextDraft": "2031-10-15"
+    },
+    "period": null,
+    "paid": null
+  }
+}

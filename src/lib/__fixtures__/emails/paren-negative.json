@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Statement",
+    "date": "2031-02-01T12:00:00Z",
+    "text": "New balance ($12.00)\nNothing to pay this month."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "-12.00",
+      "currency": "USD"
+    },
+    "due": null,
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

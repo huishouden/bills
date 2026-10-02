@@ -1,0 +1,21 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your automatic payment was processed",
+    "date": "2031-10-15T12:00:00Z",
+    "text": "Your AutoPay payment of $130.00 was processed today. Thank you."
+  },
+  "expected": {
+    "kind": "payment",
+    "amountDue": null,
+    "due": null,
+    "autopay": {
+      "enrolled": true
+    },
+    "period": null,
+    "paid": {
+      "amount": "130.00",
+      "currency": "USD"
+    }
+  }
+}

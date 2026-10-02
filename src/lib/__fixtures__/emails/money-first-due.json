@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Bill notice",
+    "date": "2031-09-02T12:00:00Z",
+    "text": "$70.00 is due on September 22, 2031. Thank you for being a customer."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "70.00",
+      "currency": "USD"
+    },
+    "due": "2031-09-22",
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

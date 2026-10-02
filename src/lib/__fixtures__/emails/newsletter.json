@@ -1,0 +1,16 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Tips for saving energy this summer",
+    "date": "2031-06-01T12:00:00Z",
+    "html": "<p>Set your thermostat a few degrees higher. Learn more about our programs.</p><p>Enroll in AutoPay to save time.</p>"
+  },
+  "expected": {
+    "kind": "other",
+    "amountDue": null,
+    "due": null,
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Fiber <noreply@fiber.example.com>",
+    "subject": "Your bill is ready",
+    "date": "2031-05-27T09:00:00Z",
+    "text": "Hello,\nYour Example Fiber bill is ready.\nTotal amount due: $85.00\nPlease pay by 06/10/2031.\nNever miss a payment: sign up for AutoPay today at example.com/autopay."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "85.00",
+      "currency": "USD"
+    },
+    "due": "2031-06-10",
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Your Example Power Co bill is ready",
+    "date": "2031-05-02T13:00:00Z",
+    "text": "View this email in your browser.",
+    "html": "<html><head><style>.x{color:red}</style><title>Bill</title></head><body>\n<span style=\"display:none\">Your statement is ready&zwnj;&nbsp;&zwnj;&nbsp;</span>\n<table><tr><td>Account ending in 0000</td></tr>\n<tr><td>Billing period:</td><td>Apr 1 &ndash; Apr 30, 2031</td></tr>\n<tr><td><b>Amount Due</b></td><td><b>&#36;120.00</b></td></tr>\n<tr><td>Due Date</td><td>May 20, 2031</td></tr></table>\n<p>Your payment of $120.00 will be automatically drafted from your bank account on May 20, 2031. No action is needed.</p>\n<p>Questions? Visit example.com/help</p></body></html>"
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "120.00",
+      "currency": "USD"
+    },
+    "due": "2031-05-20",
+    "autopay": {
+      "enrolled": true,
+      "nextDraft": "2031-05-20"
+    },
+    "period": {
+      "start": "2031-04-01",
+      "end": "2031-04-30"
+    },
+    "paid": null
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "email": {
+    "from": "Example Home Loans <statements@loans.example.com>",
+    "subject": "Your monthly statement is available",
+    "date": "2031-06-15T12:00:00Z",
+    "text": "Your monthly statement for the loan ending in 0000 is now available.\nPayment Due Date: July 1, 2031\nAmount Due: $2,000.00\nYou are enrolled in automatic payments. Your payment will be drafted on 07/01/2031."
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "2000.00",
+      "currency": "USD"
+    },
+    "due": "2031-07-01",
+    "autopay": {
+      "enrolled": true,
+      "nextDraft": "2031-07-01"
+    },
+    "period": null,
+    "paid": null
+  }
+}

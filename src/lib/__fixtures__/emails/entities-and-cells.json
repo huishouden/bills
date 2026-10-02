@@ -1,0 +1,19 @@
+{
+  "email": {
+    "from": "Example Power Co <billing@power.example.com>",
+    "subject": "Statement ready",
+    "date": "2031-03-04T12:00:00Z",
+    "html": "<table><tr><th>Total&nbsp;Amount&nbsp;Due</th><th>Due&nbsp;Date</th></tr>\n<tr><td>&#x24;45.00</td><td>Tue, Mar 25, 2031</td></tr></table>"
+  },
+  "expected": {
+    "kind": "statement",
+    "amountDue": {
+      "amount": "45.00",
+      "currency": "USD"
+    },
+    "due": "2031-03-25",
+    "autopay": null,
+    "period": null,
+    "paid": null
+  }
+}
