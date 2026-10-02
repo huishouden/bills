@@ -34,3 +34,23 @@ test('a bill one member marks paid shows as paid for the other', async ({ page, 
     await other.close();
   }
 });
+
+// Roles: a helper (test-helper) is refused the household's bills and nothing loads.
+test.describe('as a helper', () => {
+  test.beforeAll(async () => {
+    // Another app's run may have reseeded the household with an older kit that has no helper.
+    const { seedTestHousehold } = await import('@huishouden/pwa-kit/staging');
+    await seedTestHousehold({ accessToken: process.env.HH_STAGING_ACCESS_TOKEN! });
+  });
+
+  test('opening Bills says only admins and members can see the money, and loads none', async ({ page }) => {
+    const reads: string[] = [];
+    page.on('request', (r) => {
+      if (/bills|billSources|billSync/.test(decodeURIComponent(r.url()).replace(/huishouden-staging-bills/g, '') + (r.postData() ?? ''))) reads.push(r.url());
+    });
+    await signInTestUser(page, { email: 'test-helper@example.com' });
+    await expect(page.getByText('Only admins and members can see the household’s money.')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('link', { name: 'Open Huishouden' })).toBeVisible();
+    expect(reads.filter((u) => u.includes('firestore'))).toEqual([]);
+  });
+});

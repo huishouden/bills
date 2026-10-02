@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { signInSilently } from '@huishouden/pwa-kit/auth';
 import { markJoined, saveMyProfile, watchHousehold, type HouseholdState } from '@huishouden/pwa-kit/household';
+import { refusal } from '@huishouden/pwa-kit/roles';
+import { seesMoney } from './lib/access';
 import { auth, db, googleClientId, signInWithGoogle, signOutEverywhere } from './data/firebase';
 import { forgetGoogleToken } from '@huishouden/pwa-kit/google-token';
 import { useLiveStore } from './data/useLiveStore';
@@ -45,6 +47,8 @@ export default function App() {
   const frame = { onSignIn: signIn, onSignOut: signOut, signingIn };
 
   if (user === undefined) return <Plain user={null} {...frame} hideSignIn />;
+  // `?sample=helper`: what a helper or kid sees when signed in, for screenshots and tests.
+  if (user === null && new URLSearchParams(location.search).get('sample') === 'helper') return <MoneyRefusal user={null} {...frame} />;
   if (user === null) return <DemoApp {...frame} signInError={signInError} />;
   return <SignedIn key={user.uid} user={user} {...frame} />;
 }
@@ -68,6 +72,8 @@ function SignedIn({ user, ...frame }: FrameProps & { user: User }) {
     if (householdId) saveMyProfile(db, householdId, user).catch(() => {});
   }, [householdId, user]);
 
+  // Helpers and kids never see the household's bills (the rules refuse every read): no listeners, syncs or email checks.
+  if (state.status === 'ready' && !seesMoney(state.household, email)) return <MoneyRefusal user={user} {...frame} />;
   if (state.status === 'ready') return <LiveApp householdId={state.household.id} members={state.household.members} user={user} {...frame} />;
   if (state.status === 'loading') return <Plain user={user} {...frame}>Finding your household.</Plain>;
   if (state.status === 'error')
@@ -123,6 +129,18 @@ function DemoInner({ read, signInError, ...frame }: FrameProps & { read: () => n
     </div>
   );
   return <BillsApp store={store} user={null} {...frame} toast={toast} notify={notify} clearToast={clear} banner={banner} />;
+}
+
+function MoneyRefusal({ user, ...frame }: FrameProps & { user: User | null }) {
+  return (
+    <Plain user={user} {...frame}>
+      <h2 className="text-2xl font-semibold text-stone-800">Bills</h2>
+      <p className="mt-2">{refusal('see-money')}</p>
+      <a className={`${primaryButton} mt-5`} href={PORTAL_URL}>
+        Open Huishouden
+      </a>
+    </Plain>
+  );
 }
 
 function Plain({ user, children, hideSignIn, ...frame }: FrameProps & { user: User | null; children?: ReactNode; hideSignIn?: boolean }) {
