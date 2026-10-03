@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/huishouden/bills/compare/v1.6.0...v1.7.0) (2026-10-03)
+
+
+### Features
+
+* bills to pay on the household to-do list, and Skip ([#25](https://github.com/huishouden/bills/issues/25)) ([1bc6ee7](https://github.com/huishouden/bills/commit/1bc6ee7e3e2c7945b9d7bed731502e201332d2a0))
+
 ## [1.6.0](https://github.com/huishouden/bills/compare/v1.5.1...v1.6.0) (2026-10-03)
 
 
