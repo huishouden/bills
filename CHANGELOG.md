@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/huishouden/bills/compare/v1.7.0...v1.8.0) (2026-10-03)
+
+
+### Features
+
+* dark mode that follows the suite's theme ([#27](https://github.com/huishouden/bills/issues/27)) ([a30bdce](https://github.com/huishouden/bills/commit/a30bdce3ec77cbe1eea52df030210ff0fb84d124))
+
 ## [1.7.0](https://github.com/huishouden/bills/compare/v1.6.0...v1.7.0) (2026-10-03)
 
 
