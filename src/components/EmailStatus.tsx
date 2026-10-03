@@ -28,17 +28,17 @@ export function EmailStatus({ syncs, state, me, now, note, hasSources, onCheck }
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="min-w-0 flex-1 text-base text-stone-600" aria-live="polite">
+        <p className="min-w-0 flex-1 text-base text-muted" aria-live="polite">
           {line}
         </p>
         <button type="button" className={secondaryButton} onClick={onCheck} disabled={state.status === 'checking' || !hasSources}>
           <RefreshCw size={18} className={state.status === 'checking' ? 'motion-safe:animate-spin' : ''} /> Check email
         </button>
       </div>
-      {!mine && hasSources && <p className="text-sm text-stone-600">{note}</p>}
+      {!mine && hasSources && <p className="text-sm text-muted">{note}</p>}
       {state.status === 'error' && <ErrorNotice message={state.message} onRetry={onCheck} />}
       {errors.length > 0 && state.status !== 'error' && (
-        <ul className="list-disc pl-5 text-sm text-terracotta-dark" aria-label="Sources that couldn't be read">
+        <ul className="list-disc pl-5 text-sm text-attention" aria-label="Sources that couldn't be read">
           {errors.map((e) => (
             <li key={e}>{e}</li>
           ))}

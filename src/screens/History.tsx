@@ -17,11 +17,11 @@ export function History({ views, today, me, onMarkUnpaid, onUnskip, onRemove }: 
   const list = history(views, today);
   return (
     <div className={`${cardClass} p-5 sm:p-6`}>
-      <h2 className="mb-3 text-2xl font-semibold text-stone-800">Paid and past bills</h2>
+      <h2 className="mb-3 text-2xl font-semibold text-ink">Paid and past bills</h2>
       {list.length === 0 ? (
-        <p className="text-lg text-stone-600">Paid bills show here.</p>
+        <p className="text-lg text-muted">Paid bills show here.</p>
       ) : (
-        <ul className="divide-y divide-stone-200" aria-label="Past bills">
+        <ul className="divide-y divide-line" aria-label="Past bills">
           {list.map((v) => (
             <BillRow key={v.bill.id} view={v} today={today} me={me} onMarkUnpaid={onMarkUnpaid} onUnskip={onUnskip} onRemove={onRemove} />
           ))}

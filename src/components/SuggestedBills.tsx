@@ -26,18 +26,18 @@ export function SuggestedBills({ fresh, all, today, onAdd, onDismiss }: Props) {
   return (
     <section className={`${cardClass} px-5 py-4 sm:px-6`} aria-label="Possible regular bills">
       <h2 className={`${overline} px-1`}>Possible regular bills</h2>
-      <p className="mt-1 px-1 text-base text-stone-600">Regular charges on the household's cards. Add one to see it with the other bills.</p>
-      <ul className="mt-2 divide-y divide-stone-200">
+      <p className="mt-1 px-1 text-base text-muted">Regular charges on the household's cards. Add one to see it with the other bills.</p>
+      <ul className="mt-2 divide-y divide-line">
         {fresh.map((c) => {
           const name = suggestionLabel(c, all);
           return (
             <li key={c.merchantKey} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 py-2.5" aria-label={name}>
-              <span aria-hidden="true" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest-50 text-forest-700">
+              <span aria-hidden="true" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tint text-link">
                 <CreditCard size={22} strokeWidth={2} />
               </span>
               <div className="min-w-0 flex-1 basis-48">
-                <p className="truncate text-lg font-semibold text-stone-800">{name}</p>
-                <p className="text-sm text-stone-600">{detail(c, today)}</p>
+                <p className="truncate text-lg font-semibold text-ink">{name}</p>
+                <p className="text-sm text-muted">{detail(c, today)}</p>
               </div>
               <div className="flex shrink-0 gap-1">
                 <button type="button" className={ghostButton} onClick={() => onDismiss(c)} aria-label={`Not a bill: ${name}`}>
@@ -59,7 +59,7 @@ export function SuggestedBills({ fresh, all, today, onAdd, onDismiss }: Props) {
 export function SubscriptionsLine({ count, monthly }: { count: number; monthly: number }) {
   if (!count) return null;
   return (
-    <p className="mt-1 text-base text-stone-600 tabular-nums">
+    <p className="mt-1 text-base text-muted tabular-nums">
       Subscriptions: {money(monthly)}/month across {count}
     </p>
   );
