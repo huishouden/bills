@@ -91,6 +91,22 @@ export function demoData(): BillsData {
     emailBill('fiber', '2031-04-16', '80.00', { autopay: { enrolled: true, nextDraft: '2031-04-16' } }),
     emailBill('loans', '2031-05-01', '2000.00', { autopay: { enrolled: true, nextDraft: '2031-05-01' } }),
     emailBill('water', '2031-02-10', '85.00', { status: 'paid', paidAt: DEMO_NOW - 95 * DAY, paidVia: 'email' }),
+    // Skipped: a one-off nobody pays through Bills after all.
+    {
+      id: 'manual-window-cleaning',
+      schema: 'bill/v1',
+      source: 'manual',
+      kind: 'other',
+      label: 'Example Window Cleaning',
+      due: '2031-05-09',
+      amountDue: usd('65.00'),
+      status: 'due',
+      autopay: { enrolled: false },
+      dismissed: true,
+      createdAt: DEMO_NOW - 30 * DAY,
+      createdBy: ALEX,
+      updatedAt: DEMO_NOW - 6 * DAY,
+    },
   ];
   // Added from card spending earlier: a subscription charged to a card.
   bills.push({

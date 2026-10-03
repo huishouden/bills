@@ -38,7 +38,7 @@ _These are screenshots of the live site while signed out. Signed out, it shows a
 3. Each statement becomes one bill at `bills/{sourceId}_{dueDate}`, so reading it again rewrites
    the same document. Only bills whose content changed are written. A payment-confirmation email
    that arrives after a statement marks that statement paid.
-4. A member's **Paid** and **Remove** are kept through later checks.
+4. A member's **Paid**, **Skip** and **Remove** are kept through later checks.
 5. Google asks for Gmail access once, in a popup opened by a tap. Google shows an "unverified app"
    warning because the read-only Gmail scope is restricted. The access token lasts an hour. While
    it is valid, opening the app checks again on its own. After that, a check waits for a tap.
@@ -91,7 +91,10 @@ Signed-in members of a Huishouden household read and write these documents under
   are silent.
 - `bills/{id}` (`bill/v1`): kind, label, due, `amountDue` `{amount, currency}`, `status`
   (`due`/`paid`/`credit`/`unknown`), `autopay` `{enrolled, nextDraft?, via?: 'card'}`, `repeat` (weekly, monthly, quarterly, yearly) for bills added by hand, statement period, how it
-  was paid, and `dismissed`.
+  was paid, and `dismissed`. `dismissed` on an unpaid bill means it was skipped: **Skip** on
+  Upcoming or on the portal's To-do list. It shows in History as skipped, where it can be put back.
+  Skipping a repeating bill added by hand adds the next one, as paying it does. On a paid,
+  autopaid or replaced email bill, `dismissed` means it was removed, and it is hidden.
 - `billSuggestions/{merchant}`: a member's answer to a suggested bill, `added` (with the bill's id)
   or `dismissed`, with the name, who and when.
 - `spendingTransactions` (Huishouden Spending's, read only): date, description, amount, category
@@ -102,6 +105,13 @@ Signed-in members of a Huishouden household read and write these documents under
   autopay state ("$84.20, autopay off"); status is `overdue` or `upcoming`, and absent for bills on
   autopay. Written when a bill is saved, paid, removed or read from email, and reconciled each time
   the app opens. Paid, credited, autopaid and replaced bills leave it.
+- `todos/{id}` (app `bills`, ref `bill:{id}`, always private): each bill someone has to pay, for the
+  portal's To-do list. These are the unpaid, unskipped bills without autopay that are due within 30
+  days or have no due date. Title is the bill's name, detail the amount. `createdAt` is when the
+  bill was added and `due` its due day. **Mark paid** writes what **Paid** does: `status: 'paid'`,
+  `paidAt`, `paidBy` and `paidVia: 'member'`. **Skip** sets `dismissed`. Both add a repeating
+  bill's next one under the id the app uses (`{id}~{due}`), and only admins and members can run
+  them. Synced when the app opens and 3 seconds after the bills change.
 
 The project's Firestore rules live in `huishouden/rules`.
 Nothing from a mailbox is stored except these parsed fields and the Gmail message id. The message

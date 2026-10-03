@@ -10,6 +10,10 @@ export interface BillsActions {
   /** Marks a bill paid; a repeating manual bill gets its next one. Returns the undo. */
   markPaid(bill: Bill): () => void;
   markUnpaid(bill: Bill): void;
+  /** Skips an unpaid bill (kept in history as skipped); a repeating manual bill gets its next one. Returns the undo. */
+  skipBill(bill: Bill): () => void;
+  /** A skipped bill back on the list. */
+  unskipBill(bill: Bill): void;
   saveManualBill(id: string | null, input: ManualBillInput): void;
   /** Deletes a manual bill; hides an email bill (so the next check doesn't bring it back). */
   removeBill(bill: Bill): void;

@@ -9,8 +9,10 @@ import type { Bill, Money, Ymd } from './model';
  * - autopay / upcoming: due later, or covered by autopay
  * - autopaid: past due with autopay on, so presumed drafted
  * - superseded: an older statement from a source that has sent a newer one
+ * - skipped: an open bill a member skipped ("Skip" here or on the portal's To-do list): not paid
+ *   through Bills, kept in history
  */
-export type BillState = 'overdue' | 'attention' | 'autopay' | 'upcoming' | 'no-date' | 'paid' | 'credit' | 'autopaid' | 'superseded';
+export type BillState = 'overdue' | 'attention' | 'autopay' | 'upcoming' | 'no-date' | 'paid' | 'credit' | 'autopaid' | 'superseded' | 'skipped';
 
 export interface BillView {
   bill: Bill;
@@ -48,12 +50,21 @@ export function billState(b: Bill, today: Ymd, newest?: Ymd): BillState {
   return 'upcoming';
 }
 
+/**
+ * Every bill as the screens read it. `dismissed` on a bill that would otherwise be open means it
+ * was skipped; on any other (a removed paid, drafted or replaced email bill) it is hidden.
+ */
 export function viewBills(bills: Bill[], today: Ymd): BillView[] {
   const newest = newestDue(bills);
-  return bills
-    .filter((b) => !b.dismissed)
-    .map((bill) => ({ bill, state: billState(bill, today, bill.sourceId ? newest.get(bill.sourceId) : undefined), days: bill.due ? daysBetween(today, bill.due) : null }));
+  return bills.flatMap((bill) => {
+    const state = billState(bill, today, bill.sourceId ? newest.get(bill.sourceId) : undefined);
+    if (bill.dismissed && !OPEN.includes(state)) return [];
+    return [{ bill, state: bill.dismissed ? ('skipped' as const) : state, days: bill.due ? daysBetween(today, bill.due) : null }];
+  });
 }
+
+/** Whether a bill still asks for something: the Upcoming screen's bills. */
+export const isOpen = (state: BillState) => OPEN.includes(state);
 
 const byDue = (a: BillView, b: BillView) => (a.bill.due ?? '9999').localeCompare(b.bill.due ?? '9999') || a.bill.label.localeCompare(b.bill.label);
 
@@ -77,11 +88,11 @@ export function upcoming(views: BillView[], horizon = HORIZON_DAYS): Upcoming {
   };
 }
 
-/** Paid, credited, presumed-drafted and replaced bills, newest first, within the last ~6 months. */
+/** Paid, credited, presumed-drafted, replaced and skipped bills, newest first, within the last ~6 months. */
 export function history(views: BillView[], today: Ymd): BillView[] {
   return views
     .filter((v) => !OPEN.includes(v.state) && (v.days === null || v.days >= -183))
-    .filter((v) => v.bill.due === null || v.bill.due <= today || v.state === 'paid' || v.state === 'credit')
+    .filter((v) => v.bill.due === null || v.bill.due <= today || v.state === 'paid' || v.state === 'credit' || v.state === 'skipped')
     .sort((a, b) => byDue(b, a));
 }
 
