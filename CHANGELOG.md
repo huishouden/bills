@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/huishouden/bills/compare/v1.5.1...v1.6.0) (2026-10-03)
+
+
+### Features
+
+* sections in a bottom bar on phones (kit 0.52.0) ([#23](https://github.com/huishouden/bills/issues/23)) ([3823cd5](https://github.com/huishouden/bills/commit/3823cd576685da2bb77f862480fdd1e80c522c7b))
+
 ## [1.5.1](https://github.com/huishouden/bills/compare/v1.5.0...v1.5.1) (2026-10-03)
 
 
