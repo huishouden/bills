@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/huishouden/bills/compare/v1.3.0...v1.4.0) (2026-10-03)
+
+
+### Features
+
+* **security:** security headers; one-line Sample data banner on phones ([#16](https://github.com/huishouden/bills/issues/16)) ([0aaffd5](https://github.com/huishouden/bills/commit/0aaffd5ad36ce3f4b8061cf96ea2675c7bc2be6c))
+
 ## [1.3.0](https://github.com/huishouden/bills/compare/v1.2.0...v1.3.0) (2026-10-02)
 
 
