@@ -86,7 +86,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   };
 
   let content: ReactNode;
-  if (!store.ready) content = <p className="p-2 text-lg text-stone-600">Loading the household's bills</p>;
+  if (!store.ready) content = <p className="p-2 text-lg text-muted">Loading the household's bills</p>;
   else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
   else if (tab === 'sources')
     content = <Sources store={store} now={now} check={email.state} onCheck={() => void email.check()} onFind={find} onAdd={() => setSourceDialog('new')} onEdit={setSourceDialog} />;
@@ -112,7 +112,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
     );
 
   return (
-    <div className="flex min-h-dvh flex-col bg-cream font-sans text-stone-800 antialiased">
+    <div className="flex min-h-dvh flex-col bg-page font-sans text-ink antialiased">
       <Header tabs={TABS} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} />
       <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-4 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-6">
         {banner}

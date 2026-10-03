@@ -80,7 +80,7 @@ export function SourceDialog({ source, onClose, onSave, onDelete }: Props) {
           <input className={inputClass} value={input.label} onChange={(e) => set({ label: e.target.value })} placeholder="Bills" />
         </Field>
         <div>
-          <span className="mb-1.5 block text-sm font-medium text-stone-700">Autopay, when the emails don't say</span>
+          <span className="mb-1.5 block text-sm font-medium text-ink-soft">Autopay, when the emails don't say</span>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Autopay">
             <Chip active={input.autopay === true} onClick={() => set({ autopay: true })}>
               On
@@ -97,7 +97,7 @@ export function SourceDialog({ source, onClose, onSave, onDelete }: Props) {
           <input className={inputClass} type="url" value={input.payUrl} onChange={(e) => set({ payUrl: e.target.value })} placeholder="https://" />
         </Field>
         {problem && (
-          <p role="alert" className="text-base text-red-700">
+          <p role="alert" className="text-base text-error">
             {problem}
           </p>
         )}

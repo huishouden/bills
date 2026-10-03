@@ -88,7 +88,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
           </Field>
         </div>
         <div>
-          <span className="mb-1.5 block text-sm font-medium text-stone-700">Autopay</span>
+          <span className="mb-1.5 block text-sm font-medium text-ink-soft">Autopay</span>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Autopay">
             <Chip active={autopay === true} onClick={() => setAutopay(true)}>
               On
@@ -102,7 +102,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
           </div>
         </div>
         <div>
-          <span className="mb-1.5 block text-sm font-medium text-stone-700">Repeats</span>
+          <span className="mb-1.5 block text-sm font-medium text-ink-soft">Repeats</span>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Repeats">
             {REPEATS.map(([value, text]) => (
               <Chip key={text} active={repeat === value} onClick={() => setRepeat(value)}>
@@ -110,13 +110,13 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
               </Chip>
             ))}
           </div>
-          {repeat && <span className="mt-1 block text-sm text-stone-600">Marking it paid adds the next one.</span>}
+          {repeat && <span className="mt-1 block text-sm text-muted">Marking it paid adds the next one.</span>}
         </div>
         <Field label="Pay link (optional)">
           <input className={inputClass} type="url" value={payUrl} onChange={(e) => setPayUrl(e.target.value)} placeholder="https://" />
         </Field>
         {problem && (
-          <p role="alert" className="text-base text-red-700">
+          <p role="alert" className="text-base text-error">
             {problem}
           </p>
         )}

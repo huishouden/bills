@@ -50,18 +50,18 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
   const meta = [KIND_LABELS[bill.kind], period, bill.source === 'manual' ? (bill.repeat ? `Added by hand, repeats ${bill.repeat}` : 'Added by hand') : 'From email'].filter(Boolean).join(' · ');
   return (
-    <li className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_10.5rem] sm:flex-nowrap rounded-xl px-3 ${attention ? 'bg-terracotta-light/40' : ''}`} aria-label={bill.label}>
+    <li className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_10.5rem] lg:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_14.5rem] sm:flex-nowrap rounded-xl px-3 ${attention ? 'bg-attention-tint/40' : ''}`} aria-label={bill.label}>
       <KindIcon kind={bill.kind} attention={attention} />
       <div className="min-w-0 flex-1 basis-48 sm:basis-auto">
-        <p className="truncate text-lg font-semibold text-stone-800">{bill.label}</p>
-        <p className="truncate text-sm text-stone-600">{meta}</p>
+        <p className="truncate text-lg font-semibold text-ink">{bill.label}</p>
+        <p className="truncate text-sm text-muted">{meta}</p>
       </div>
       <div className="w-full sm:w-auto">
-        <p className={`text-base font-medium ${attention ? 'text-terracotta-dark' : 'text-stone-800'}`}>{open ? whenText(view, today) : historyText(view, today, me)}</p>
+        <p className={`text-base font-medium ${attention ? 'text-attention' : 'text-ink'}`}>{open ? whenText(view, today) : historyText(view, today, me)}</p>
         {open && <AutopayChip autopay={bill.autopay} attention={attention} />}
       </div>
-      <p className="flex-1 text-left sm:text-right text-xl font-semibold tabular-nums text-stone-800">{bill.amountDue ? formatMoney(bill.amountDue) : '—'}</p>
-      <div className="flex items-center gap-1">
+      <p className="flex-1 text-left sm:text-right text-xl font-semibold tabular-nums text-ink">{bill.amountDue ? formatMoney(bill.amountDue) : '—'}</p>
+      <div className="flex flex-wrap items-center gap-1">
         {open && onMarkPaid && (
           <button type="button" className={secondaryButton} onClick={() => onMarkPaid(bill)} aria-label={`Mark ${bill.label} paid`}>
             <Check size={18} /> Paid
