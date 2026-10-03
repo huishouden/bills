@@ -1,5 +1,6 @@
 import { addDays, addMonths, type Ymd } from '@huishouden/pwa-kit/time';
-import { clean, type Bill, type BillDoc, type Repeat, withoutId } from '../lib/model';
+import { withoutId } from '@huishouden/pwa-kit/store';
+import { clean, type Bill, type BillDoc, type Repeat } from '../lib/model';
 
 const MONTHS = { monthly: 1, quarterly: 3, yearly: 12 } as const;
 

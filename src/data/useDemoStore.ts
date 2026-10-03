@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react';
-import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
-import { manualBillDoc, sourceDoc, type Bill } from '../lib/model';
-import { suggestionId } from '../lib/suggestions';
-import { sampleMailbox } from '../lib/sampleMailbox';
+import { useMemo } from 'react';
+import { useSampleStore } from '@huishouden/pwa-kit/react/store';
 import { gmailMailbox } from '@huishouden/pwa-kit/gmail';
-import { nextRepeat, paidDoc, unpaidDoc } from './build';
-import type { BillsActions, BillsStore, MailAccess } from './types';
+import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
+import { sampleMailbox } from '../lib/sampleMailbox';
+import { createActions, type Backend, type DataKey } from './actions';
+import type { BillsStore, MailAccess } from './types';
 
 /**
  * Sample data kept in memory: the signed-out app is fully clickable, nothing is saved, and a reload
@@ -13,79 +12,16 @@ import type { BillsActions, BillsStore, MailAccess } from './types';
  * `window.__gmailTestToken`, a stubbed Gmail API).
  */
 export function useDemoStore(clock: () => number): BillsStore {
-  const [data, setData] = useState<BillsData>(demoData);
+  const { data, read, backend: memory } = useSampleStore<BillsData, DataKey>(demoData);
   const me = DEMO_MEMBERS[0];
 
-  const actions = useMemo<BillsActions>(() => {
-    let seq = 0;
-    const newId = () => `local-${Date.now()}-${seq++}`;
-    const patch = (f: (d: BillsData) => BillsData) => setData(f);
-    const upsertBill = (d: BillsData, bill: Bill): BillsData => ({ ...d, bills: [...d.bills.filter((b) => b.id !== bill.id), bill] });
-    return {
-      markPaid: (bill) => {
-        const now = clock();
-        const next = nextRepeat(bill, me, now);
-        const nextId = next ? newId() : null;
-        patch((d) => {
-          let out = upsertBill(d, { id: bill.id, ...paidDoc(bill, me, now) });
-          if (next && nextId) out = upsertBill(out, { id: nextId, ...next });
-          return out;
-        });
-        return () =>
-          patch((d) => {
-            const out = upsertBill(d, bill);
-            return { ...out, bills: out.bills.filter((b) => b.id !== nextId) };
-          });
-      },
-      markUnpaid: (bill) => patch((d) => upsertBill(d, { id: bill.id, ...unpaidDoc(bill, clock()) })),
-      saveManualBill: (id, input) =>
-        patch((d) => {
-          const now = clock();
-          const existing = id ? d.bills.find((b) => b.id === id) : undefined;
-          return upsertBill(d, { id: id ?? newId(), ...manualBillDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now, existing) });
-        }),
-      removeBill: (bill) =>
-        patch((d) => (bill.source === 'manual' ? { ...d, bills: d.bills.filter((b) => b.id !== bill.id) } : upsertBill(d, { ...bill, dismissed: true }))),
-      restoreBill: (bill) => patch((d) => upsertBill(d, bill)),
-      saveSource: (id, input) =>
-        patch((d) => {
-          const now = clock();
-          const existing = id ? d.sources.find((s) => s.id === id) : undefined;
-          const source = { id: id ?? newId(), ...sourceDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now) };
-          const bills = existing ? d.bills.map((b) => (b.sourceId === id ? { ...b, label: source.name, kind: source.kind } : b)) : d.bills;
-          return { ...d, bills, sources: [...d.sources.filter((s) => s.id !== source.id), source] };
-        }),
-      deleteSource: (source) => {
-        let removed: Bill[] = [];
-        patch((d) => {
-          removed = d.bills.filter((b) => b.sourceId === source.id && b.status !== 'paid');
-          return { ...d, sources: d.sources.filter((s) => s.id !== source.id), bills: d.bills.filter((b) => !removed.includes(b)) };
-        });
-        return () => patch((d) => ({ ...d, sources: [...d.sources, source], bills: [...d.bills, ...removed] }));
-      },
-      addSuggestion: (candidate, input) => {
-        const now = clock();
-        const id = newId();
-        const key = suggestionId(candidate.merchantKey);
-        patch((d) => ({
-          ...upsertBill(d, { id, ...manualBillDoc(input, me, now, now) }),
-          answers: [...d.answers.filter((a) => a.id !== key), { id: key, status: 'added', name: input.label, billId: id, by: me, at: now }],
-        }));
-        return () => patch((d) => ({ ...d, bills: d.bills.filter((b) => b.id !== id), answers: d.answers.filter((a) => a.id !== key) }));
-      },
-      dismissSuggestion: (candidate, name) => {
-        const key = suggestionId(candidate.merchantKey);
-        patch((d) => ({ ...d, answers: [...d.answers.filter((a) => a.id !== key), { id: key, status: 'dismissed', name, by: me, at: clock() }] }));
-        return () => patch((d) => ({ ...d, answers: d.answers.filter((a) => a.id !== key) }));
-      },
-      applySync: async (result) =>
-        patch((d) => {
-          let out = d;
-          for (const w of result.writes) out = upsertBill(out, { id: w.id, ...w.data });
-          return { ...out, syncs: [...out.syncs.filter((s) => s.id !== me), { id: me, ...result.status }] };
-        }),
+  const actions = useMemo(() => {
+    const backend: Backend = {
+      ...memory,
+      writeSync: async (ops) => memory.write(ops),
     };
-  }, [clock, me]);
+    return createActions(backend, read, me, clock);
+  }, [clock, me, memory, read]);
 
   const mail = useMemo<MailAccess>(() => {
     const box = () => (typeof window !== 'undefined' && window.__gmailTestToken ? gmailMailbox(window.__gmailTestToken) : sampleMailbox(clock));
