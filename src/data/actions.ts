@@ -3,7 +3,7 @@ import { track } from '@huishouden/pwa-kit/observability';
 import type { BillsData } from '../lib/demo';
 import { manualBillDoc, sourceDoc, type BillSuggestionDoc } from '../lib/model';
 import { suggestionId } from '../lib/suggestions';
-import { nextRepeat, paidDoc, unpaidDoc } from './build';
+import { nextId, nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions } from './types';
 
 // The bills actions, written once over a small storage interface that the live (Firestore) and the
@@ -36,9 +36,18 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
       const now = clock();
       const ops: Op[] = [{ col: 'bills', id: bill.id, data: paidDoc(bill, me, now) }];
       const next = nextRepeat(bill, me, now);
-      if (next) ops.push({ col: 'bills', id: backend.newId('bills'), data: next });
+      if (next) ops.push({ col: 'bills', id: nextId(bill, next.due!), data: next });
       return change(ops);
     },
+    skipBill: (bill) => {
+      track('skip bill');
+      const now = clock();
+      const ops: Op[] = [{ col: 'bills', id: bill.id, data: { dismissed: true, updatedAt: now }, merge: true }];
+      const next = nextRepeat(bill, me, now);
+      if (next) ops.push({ col: 'bills', id: nextId(bill, next.due!), data: next });
+      return change(ops);
+    },
+    unskipBill: (bill) => backend.write([{ col: 'bills', id: bill.id, data: { dismissed: false, updatedAt: clock() }, merge: true }]),
     markUnpaid: (bill) => backend.write([{ col: 'bills', id: bill.id, data: unpaidDoc(bill, clock()) }]),
     saveManualBill: (id, input) => {
       track('add bill');

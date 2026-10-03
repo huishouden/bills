@@ -66,6 +66,11 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
     actions.markUnpaid(bill);
     notify(`${bill.label} is unpaid again`, () => actions.restoreBill(bill));
   };
+  const skip = (bill: Bill) => notify(`Skipped ${bill.label}`, actions.skipBill(bill));
+  const unskip = (bill: Bill) => {
+    actions.unskipBill(bill);
+    notify(`${bill.label} is back on the list`, () => actions.restoreBill(bill));
+  };
   const remove = (bill: Bill) => {
     actions.removeBill(bill);
     notify(`Removed ${bill.label}`, () => actions.restoreBill(bill));
@@ -82,7 +87,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
 
   let content: ReactNode;
   if (!store.ready) content = <p className="p-2 text-lg text-stone-600">Loading the household's bills</p>;
-  else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onRemove={remove} />;
+  else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
   else if (tab === 'sources')
     content = <Sources store={store} now={now} check={email.state} onCheck={() => void email.check()} onFind={find} onAdd={() => setSourceDialog('new')} onEdit={setSourceDialog} />;
   else
@@ -98,6 +103,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
         onAdd={() => setBillDialog('new')}
         onEdit={setBillDialog}
         onMarkPaid={markPaid}
+        onSkip={skip}
         onRemove={remove}
         suggested={suggested}
         onAddSuggestion={addSuggestion}

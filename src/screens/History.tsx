@@ -8,11 +8,12 @@ interface Props {
   today: string;
   me: string;
   onMarkUnpaid: (bill: Bill) => void;
+  onUnskip: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
 }
 
-/** Paid, drafted and replaced bills from the last six months. */
-export function History({ views, today, me, onMarkUnpaid, onRemove }: Props) {
+/** Paid, drafted, replaced and skipped bills from the last six months. */
+export function History({ views, today, me, onMarkUnpaid, onUnskip, onRemove }: Props) {
   const list = history(views, today);
   return (
     <div className={`${cardClass} p-5 sm:p-6`}>
@@ -22,7 +23,7 @@ export function History({ views, today, me, onMarkUnpaid, onRemove }: Props) {
       ) : (
         <ul className="divide-y divide-stone-200" aria-label="Past bills">
           {list.map((v) => (
-            <BillRow key={v.bill.id} view={v} today={today} me={me} onMarkUnpaid={onMarkUnpaid} onRemove={onRemove} />
+            <BillRow key={v.bill.id} view={v} today={today} me={me} onMarkUnpaid={onMarkUnpaid} onUnskip={onUnskip} onRemove={onRemove} />
           ))}
         </ul>
       )}

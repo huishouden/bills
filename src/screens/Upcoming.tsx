@@ -23,6 +23,7 @@ interface Props {
   onAdd: () => void;
   onEdit: (bill: Bill) => void;
   onMarkPaid: (bill: Bill) => void;
+  onSkip: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
   suggested: Suggestions;
   onAddSuggestion: (c: RecurringCandidate) => void;
@@ -40,11 +41,11 @@ function Group({ title, children, count }: { title: string; children: ReactNode;
 }
 
 /** The next 30 days: overdue first, then this week, then the rest of the month. */
-export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onRemove, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
+export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onSkip, onRemove, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
   const u = upcoming(views);
   const h = headline(u);
   const { sources, syncs } = store.data;
-  const row = (v: BillView) => <BillRow key={v.bill.id} view={v} today={today} me={store.me} onMarkPaid={onMarkPaid} onEdit={onEdit} onRemove={onRemove} />;
+  const row = (v: BillView) => <BillRow key={v.bill.id} view={v} today={today} me={store.me} onMarkPaid={onMarkPaid} onSkip={onSkip} onEdit={onEdit} onRemove={onRemove} />;
   const empty = !sources.length && !views.length;
 
   return (
