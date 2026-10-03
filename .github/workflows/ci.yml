@@ -28,12 +28,12 @@ jobs:
   pwa:
     uses: huishouden/pwa-kit/.github/workflows/pwa.yml@v0
     permissions:
-      contents: write # README screenshots, PR evidence branch
+      contents: write # README screenshots, PR evidence branch, the hosting release asset
       id-token: write
       pull-requests: write # before/after comment on PRs
     with:
-      hosting-target: bills
-      site-url: https://huishouden-bills.web.app
+      base: /bills/
+      site-url: https://huishouden-piekstra.web.app/bills/
       staging-ref: ${{ inputs.staging-ref }}
 
   release:

@@ -67,4 +67,4 @@ test('phone: upcoming', async ({ page }) => {
 });
 
 // What a helper or kid sees: no money, a way back to the portal.
-test('helper', ({ page }) => captureScreenshot(page, 'helper', { path: '/?sample=helper' }));
+test('helper', ({ page }) => captureScreenshot(page, 'helper', { path: './?sample=helper' }));
