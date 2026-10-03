@@ -49,12 +49,15 @@ test.describe('the portal to-do list', () => {
     if (!res.ok && res.status !== 404) throw new Error(`${method} ${url}: ${res.status} ${await res.text()}`);
     return res.status === 404 ? null : res.json();
   };
-  /** Deletes every document in `collection` whose `field` is `value`. */
-  const deleteWhere = async (collection: string, field: string, value: string) => {
+  /** The names of the documents in `collection` whose `field` is `value`. */
+  const findWhere = async (collection: string, field: string, value: string) => {
     const rows = (await api('POST', `${root}:runQuery`, {
       structuredQuery: { from: [{ collectionId: collection }], where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } } },
     })) as { document?: { name: string } }[];
-    for (const r of rows ?? []) if (r.document) await api('DELETE', r.document.name);
+    return (rows ?? []).flatMap((r) => (r.document ? [r.document.name] : []));
+  };
+  const deleteWhere = async (collection: string, field: string, value: string) => {
+    for (const name of await findWhere(collection, field, value)) await api('DELETE', name);
   };
 
   test('a bill marked paid on the To-do tab shows paid in Bills', async ({ page }) => {
@@ -69,6 +72,8 @@ test.describe('the portal to-do list', () => {
       await dialog.getByLabel('Amount (optional)').fill('42');
       await dialog.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('listitem', { name: label })).toContainText('$42.00');
+      // Published to the household's to-do list before this page leaves for the portal.
+      await expect.poll(async () => (await findWhere('todos', 'title', label)).length, { timeout: 20_000 }).toBe(1);
 
       await runPortalTodo(page, label, { action: 'done' });
 
