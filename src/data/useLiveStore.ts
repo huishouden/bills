@@ -8,6 +8,8 @@ import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
 import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
+import { syncTodos } from '@huishouden/pwa-kit/todos';
+import { todoItems } from '../lib/todos';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
@@ -16,6 +18,8 @@ import { COLLECTIONS, createActions, type Backend, type DataKey, type Op } from 
 import type { BillsStore, MailAccess } from './types';
 
 const clock = () => Date.now();
+/** How long after the bills change the to-do list is brought up to date (a burst of writes syncs once). */
+const TODO_DELAY = 3000;
 const path = (key: DataKey) => COLLECTIONS[key];
 
 /**
@@ -118,6 +122,16 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     }
     agenda.sync([...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))]);
   }, [billsFromServer, agenda, base, me]);
+
+  // The household's to-do list: bills to pay, on open and a few seconds after the bills change (a
+  // bill paid or skipped here or on the portal leaves it). Only admins and members get this far.
+  useEffect(() => {
+    if (!billsFromServer) return;
+    const timer = setTimeout(() => {
+      void syncTodos(db, householdId, AGENDA_APP, todoItems(billsRef.current, clock()), { by: me }).catch((e) => console.warn('To-do update failed', e));
+    }, TODO_DELAY);
+    return () => clearTimeout(timer);
+  }, [bills, billsFromServer, householdId, me]);
 
   const actions = useMemo(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));

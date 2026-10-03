@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signInTestUser } from '@huishouden/pwa-kit/e2e';
+import { runPortalTodo, signInTestUser } from '@huishouden/pwa-kit/e2e';
 
 // Signed in as an invented test user on the staging site (pwa-kit STANDARD.md "Staging"): the real
 // staging Firestore and rules, the seeded test household. Other runs share that household, so each
@@ -33,6 +33,53 @@ test('a bill one member marks paid shows as paid for the other', async ({ page, 
   } finally {
     await other.close();
   }
+});
+
+// The household's to-do list: a bill to pay is published to the portal's To-do tab, and "Mark paid"
+// there marks it paid in Bills.
+test.describe('the portal to-do list', () => {
+  const PROJECT = 'huishouden-staging';
+  const root = `projects/${PROJECT}/databases/(default)/documents/households/test-household`;
+  const api = async (method: string, url: string, body?: object) => {
+    const res = await fetch(`https://firestore.googleapis.com/v1/${url}`, {
+      method,
+      headers: { authorization: `Bearer ${process.env.HH_STAGING_ACCESS_TOKEN}`, 'content-type': 'application/json', 'x-goog-user-project': PROJECT },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok && res.status !== 404) throw new Error(`${method} ${url}: ${res.status} ${await res.text()}`);
+    return res.status === 404 ? null : res.json();
+  };
+  /** Deletes every document in `collection` whose `field` is `value`. */
+  const deleteWhere = async (collection: string, field: string, value: string) => {
+    const rows = (await api('POST', `${root}:runQuery`, {
+      structuredQuery: { from: [{ collectionId: collection }], where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } } },
+    })) as { document?: { name: string } }[];
+    for (const r of rows ?? []) if (r.document) await api('DELETE', r.document.name);
+  };
+
+  test('a bill marked paid on the To-do tab shows paid in Bills', async ({ page }) => {
+    test.setTimeout(120_000);
+    const label = `Todo bill ${Date.now().toString(36)}`;
+    try {
+      await signInTestUser(page, { email: 'test-a@example.com' });
+      await page.getByRole('button', { name: 'Add a bill' }).first().click({ timeout: 20_000 });
+      const dialog = page.getByRole('dialog', { name: 'Add a bill' });
+      await dialog.getByLabel('Name').fill(label);
+      await dialog.getByLabel('Due date').fill(today());
+      await dialog.getByLabel('Amount (optional)').fill('42');
+      await dialog.getByRole('button', { name: 'Save' }).click();
+      await expect(page.getByRole('listitem', { name: label })).toContainText('$42.00');
+
+      await runPortalTodo(page, label, { action: 'done' });
+
+      await page.goto('./');
+      await page.getByRole('button', { name: 'History', exact: true }).click({ timeout: 20_000 });
+      await expect(page.getByRole('listitem', { name: label })).toContainText('marked paid', { timeout: 20_000 });
+    } finally {
+      await deleteWhere('bills', 'label', label);
+      await deleteWhere('todos', 'title', label);
+    }
+  });
 });
 
 // Roles: a helper (test-helper) is refused the household's bills and nothing loads.

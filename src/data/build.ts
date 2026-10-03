@@ -21,9 +21,16 @@ export function unpaidDoc(bill: Bill, now: number): BillDoc {
 /** A repeating manual bill's next one, due one interval later, same amount and autopay. */
 export function nextRepeat(bill: Bill, me: string, now: number): BillDoc | null {
   if (bill.source !== 'manual' || !bill.repeat || !bill.due) return null;
-  const { paidAt: _a, paidBy: _b, paidVia: _c, ...rest } = withoutId(bill);
+  const { paidAt: _a, paidBy: _b, paidVia: _c, dismissed: _d, ...rest } = withoutId(bill);
   return clean({ ...rest, due: stepDue(bill.due, bill.repeat), status: 'due' as const, createdAt: now, createdBy: me, updatedAt: now });
 }
+
+/**
+ * The id of a series' bill due on `due`, from the id of any bill in it: the same however often or
+ * wherever the previous one is paid or skipped (here, a rollover, the portal's To-do list), so the
+ * next one is written once, never twice.
+ */
+export const nextId = (bill: Pick<Bill, 'id'>, due: Ymd) => `${bill.id.split('~')[0]}~${due}`;
 
 /**
  * Repeating bills on autopay that nobody marks paid: once one's due date has passed, the next one
@@ -44,7 +51,7 @@ export function autopayRollovers(bills: Bill[], today: Ymd, me: string, now: num
     if (!last.autopay?.enrolled || last.status === 'paid' || last.due! >= today) continue;
     let next = nextRepeat(last, me, now)!;
     while (next.due! < today) next = { ...next, due: stepDue(next.due!, last.repeat!) };
-    out.push({ id: `${last.id.split('~')[0]}~${next.due}`, data: next });
+    out.push({ id: nextId(last, next.due!), data: next });
   }
   return out;
 }
