@@ -13,7 +13,7 @@ import { ClockProvider } from '@huishouden/pwa-kit/react/clock';
 import { BillsApp } from './BillsApp';
 import { Header } from './components/Header';
 import { PORTAL_URL } from './lib/portal';
-import { cardClass, primaryButton, useToast } from '@huishouden/pwa-kit/react/ui';
+import { cardClass, primaryButton, SampleBanner, useToast } from '@huishouden/pwa-kit/react/ui';
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -123,10 +123,7 @@ function DemoInner({ read, signInError, ...frame }: FrameProps & { read: () => n
   const { toast, notify, clear } = useToast();
   const store = useDemoStore(read);
   const banner = (
-    <div className={`${cardClass} flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-1.5`} role="note">
-      <span className="rounded-full bg-terracotta-light px-3 py-1 text-sm font-semibold text-terracotta-dark">Sample data</span>
-      <p className="min-w-0 flex-1 text-base text-stone-600">{signInError ?? 'An invented household. Nothing is saved. Sign in to use your household’s own bills.'}</p>
-    </div>
+    <SampleBanner text="An invented household. Nothing is saved. Sign in to use your household’s own bills." notice={signInError ?? undefined} />
   );
   return <BillsApp store={store} user={null} {...frame} toast={toast} notify={notify} clearToast={clear} banner={banner} />;
 }
