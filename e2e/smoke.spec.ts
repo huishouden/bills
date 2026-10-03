@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { expectCleanLoad, expectGoogleSignInPopup, expectHuishoudenFrame, expectInstallable } from '@huishouden/pwa-kit/e2e';
+import {
+  expectCleanLoad,
+  expectCompactSampleBanner,
+  expectGoogleSignInPopup,
+  expectHuishoudenFrame,
+  expectInstallable,
+  expectSecurityHeaders,
+} from '@huishouden/pwa-kit/e2e';
 
 const fixedTime = '2031-05-14T10:30:00';
 
@@ -17,3 +24,7 @@ test('Google sign-in popup reaches Google with an allowed redirect URI', ({ page
   expectGoogleSignInPopup(page, context, async (p) => {
     await p.getByRole('button', { name: 'Sign in with Google' }).first().click();
   }));
+
+test('sends the security headers and leaves sign-in un-framed', ({ request }) => expectSecurityHeaders(request, '/', {}));
+
+test('keeps the Sample data banner to one line on a phone', ({ page }) => expectCompactSampleBanner(page, '/'));
