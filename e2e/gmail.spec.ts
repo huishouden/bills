@@ -24,7 +24,7 @@ test('Check email searches each source, reads the newest statement and updates t
     window.__gmailTestToken = 'test-token';
   });
   await page.clock.setFixedTime(fixedTime);
-  await page.goto('/');
+  await page.goto('./');
 
   const week = page.getByRole('region', { name: 'This week' });
   await expect(week.getByRole('listitem', { name: 'Example Power Co' })).toContainText('$120.00');
@@ -50,7 +50,7 @@ test('an expired Gmail token is reported in words, with a retry', async ({ page 
     window.__gmailTestToken = 'expired-token';
   });
   await page.clock.setFixedTime(fixedTime);
-  await page.goto('/');
+  await page.goto('./');
   await page.getByRole('button', { name: 'Check email' }).click();
   const alert = page.getByRole('alert');
   await expect(alert).toContainText('Gmail access has ended; check email again to allow it.');

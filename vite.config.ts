@@ -18,10 +18,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     pwaApp({
+      // Bills' path on the suite's one site (pwa-kit docs/one-site.md).
+      base: '/bills/',
       name: 'Huishouden Bills',
       shortName: 'Bills',
       description: "What's due, and when",
-      url: 'https://huishouden-bills.web.app',
+      url: 'https://huishouden-piekstra.web.app/bills/',
       themeColor: '#1b4332',
       backgroundColor: '#faf9f5',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
