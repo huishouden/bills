@@ -195,5 +195,3 @@ export function manualBillDoc(input: ManualBillInput, by: string, createdAt: num
     updatedAt: now,
   }) as BillDoc;
 }
-
-export const withoutId = <T extends { id: string }>({ id: _id, ...rest }: T): Omit<T, 'id'> => rest;

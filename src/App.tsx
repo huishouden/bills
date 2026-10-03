@@ -5,7 +5,6 @@ import { markJoined, saveMyProfile, watchHousehold, type HouseholdState } from '
 import { refusal } from '@huishouden/pwa-kit/roles';
 import { seesMoney } from './lib/access';
 import { auth, db, googleClientId, signInWithGoogle, signOutEverywhere } from './data/firebase';
-import { forgetGoogleToken } from '@huishouden/pwa-kit/google-token';
 import { useLiveStore } from './data/useLiveStore';
 import { useDemoStore } from './data/useDemoStore';
 import { DEMO_NOW } from './lib/demo';
@@ -39,10 +38,7 @@ export default function App() {
       setSigningIn(false);
     }
   }, []);
-  const signOut = useCallback(() => {
-    forgetGoogleToken();
-    void signOutEverywhere();
-  }, []);
+  const signOut = useCallback(() => void signOutEverywhere(), []);
 
   const frame = { onSignIn: signIn, onSignOut: signOut, signingIn };
 
