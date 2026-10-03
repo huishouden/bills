@@ -50,12 +50,12 @@ function ProposalRow({ p, today, onAdd }: { p: Proposal; today: string; onAdd: (
           {added ? <Check size={18} /> : <Plus size={18} />} {added ? 'Added' : 'Add'}
         </button>
       </div>
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-muted">
         {p.count} email{p.count === 1 ? '' : 's'} from {wholeDomain ? `any address at ${p.sender.domain}` : p.sender.address}. {previewText(p, today)}
       </p>
       {p.sender.domain && !added && (
-        <label className="flex min-h-11 items-center gap-2 text-sm text-stone-700">
-          <input type="checkbox" className="h-5 w-5 accent-forest-700" checked={wholeDomain} onChange={(e) => setWholeDomain(e.target.checked)} />
+        <label className="flex min-h-11 items-center gap-2 text-sm text-ink-soft">
+          <input type="checkbox" className="h-5 w-5 accent-forest-700 dark:accent-forest-300" checked={wholeDomain} onChange={(e) => setWholeDomain(e.target.checked)} />
           Match any address at {p.sender.domain}
         </label>
       )}
@@ -78,15 +78,15 @@ export function FindBillsDialog({ state, today, onSearch, onAdd, onClose }: Prop
         </button>
       }
     >
-      {(state.status === 'searching' || state.status === 'idle') && <p className="text-base text-stone-600">Looking through the last 60 days of email for statements and bill notices.</p>}
+      {(state.status === 'searching' || state.status === 'idle') && <p className="text-base text-muted">Looking through the last 60 days of email for statements and bill notices.</p>}
       {state.status === 'error' && <ErrorNotice message={state.message} onRetry={onSearch} />}
       {state.status === 'done' && state.proposals.length === 0 && (
-        <p className="text-base text-stone-600">No new senders of bill emails in the last 60 days. Add a source by hand if a provider's emails use other words.</p>
+        <p className="text-base text-muted">No new senders of bill emails in the last 60 days. Add a source by hand if a provider's emails use other words.</p>
       )}
       {state.status === 'done' && state.proposals.length > 0 && (
         <>
-          <p className="mb-2 text-base text-stone-600">Add the ones that are bills. Each becomes a source the next email check reads.</p>
-          <ul aria-label="Found senders" className="divide-y divide-stone-200">
+          <p className="mb-2 text-base text-muted">Add the ones that are bills. Each becomes a source the next email check reads.</p>
+          <ul aria-label="Found senders" className="divide-y divide-line">
             {state.proposals.map((p) => (
               <ProposalRow key={p.sender.address} p={p} today={today} onAdd={onAdd} />
             ))}

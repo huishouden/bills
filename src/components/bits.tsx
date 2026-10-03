@@ -18,7 +18,7 @@ export function KindIcon({ kind, attention, size = 22 }: { kind: BillKind; atten
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${attention ? 'bg-terracotta-light text-terracotta-dark' : 'bg-forest-50 text-forest-700'}`}
+      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${attention ? 'bg-attention-tint text-attention' : 'bg-tint text-link'}`}
     >
       <Icon size={size} strokeWidth={2} />
     </span>
@@ -29,10 +29,10 @@ export function KindIcon({ kind, attention, size = 22 }: { kind: BillKind; atten
 export function AutopayChip({ autopay, attention }: { autopay: Autopay | null; attention?: boolean }) {
   const text = autopay === null ? 'Autopay unknown' : autopay.enrolled ? (autopay.via === 'card' ? 'Autopay by card' : 'Autopay on') : 'Autopay off';
   const tone = autopay?.enrolled
-    ? 'border-forest-200 bg-forest-50 text-forest-700'
+    ? 'border-forest-200 bg-tint text-link dark:border-forest-500'
     : attention
-      ? 'border-terracotta bg-terracotta-light text-terracotta-dark'
-      : 'border-stone-200 bg-white text-stone-600';
+      ? 'border-terracotta bg-attention-tint text-attention'
+      : 'border-line bg-surface text-muted';
   return <span className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-sm font-medium whitespace-nowrap ${tone}`}>{text}</span>;
 }
 
