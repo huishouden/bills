@@ -1,3 +1,4 @@
+import { CalendarClock, History as HistoryIcon, Mail } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { useClock } from '@huishouden/pwa-kit/react/clock';
@@ -33,9 +34,9 @@ interface Props {
 }
 
 const TABS: Tab[] = [
-  { id: 'upcoming', label: 'Upcoming' },
-  { id: 'history', label: 'History' },
-  { id: 'sources', label: 'Sources' },
+  { id: 'upcoming', label: 'Upcoming', icon: CalendarClock },
+  { id: 'history', label: 'History', icon: HistoryIcon },
+  { id: 'sources', label: 'Sources', icon: Mail },
 ];
 
 /** Everything inside the frame once there is data to show (live or sample). */
