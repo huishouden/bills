@@ -3,7 +3,7 @@
 What's due, and when: the household's bills for the next 30 days, with the ones that need a hand
 called out.
 
-Live at https://huishouden-bills.web.app. It is also linked from the [Huishouden portal](https://huishouden-piekstra.web.app).
+Live at https://huishouden-piekstra.web.app/bills/; the old address, huishouden-bills.web.app, redirects there. It is also linked from the [Huishouden portal](https://huishouden-piekstra.web.app).
 
 ## Screenshots
 

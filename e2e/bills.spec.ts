@@ -5,7 +5,7 @@ const fixedTime = '2031-05-14T10:30:00';
 
 async function open(page: Page) {
   await page.clock.setFixedTime(fixedTime);
-  await page.goto('/');
+  await page.goto('./');
   await expect(page.getByText('Sample data')).toBeVisible();
 }
 
