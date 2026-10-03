@@ -1,13 +1,17 @@
 import { allDayStart, type AgendaInput } from '@huishouden/pwa-kit/agenda';
 import { formatMoney } from '@huishouden/pwa-kit/money';
+import { appUrl } from '@huishouden/pwa-kit/site';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import type { Autopay, Bill } from './model';
 import { viewBills, type BillView } from './view';
 
 /** This app's name on the household agenda. */
 export const AGENDA_APP = 'bills';
-/** The app has no per-bill routes; items open its Upcoming screen. */
-export const APP_URL = 'https://huishouden-bills.web.app/';
+/**
+ * The app's address on the suite's one site; there are no per-bill routes, so items open its
+ * Upcoming screen. In the browser the origin is the page's, so staging links to staging.
+ */
+export const APP_URL = appUrl(import.meta.env.BASE_URL ?? '/bills/', '', globalThis.location?.origin ?? 'https://huishouden-piekstra.web.app');
 
 export const billRef = (id: string) => `bill:${id}`;
 
@@ -21,7 +25,7 @@ const autopayText = (a: Autopay | null) => (a === null ? 'autopay unknown' : a.e
  * Bills on autopay carry no status: nobody has to do anything, and a status would let the portal
  * call them overdue once the day passes.
  */
-function itemFor({ bill, state }: BillView, appUrl: string): Item | null {
+function itemFor({ bill, state }: BillView, url: string): Item | null {
   if (!bill.due) return null;
   if (state !== 'overdue' && state !== 'attention' && state !== 'upcoming' && state !== 'autopay') return null;
   const detail = [bill.amountDue ? formatMoney(bill.amountDue) : null, autopayText(bill.autopay)].filter(Boolean).join(', ');
@@ -31,15 +35,15 @@ function itemFor({ bill, state }: BillView, appUrl: string): Item | null {
     start: allDayStart(bill.due),
     allDay: true,
     detail: detail.charAt(0).toUpperCase() + detail.slice(1),
-    url: appUrl,
+    url,
     ...(state === 'autopay' ? {} : { status: state === 'overdue' ? ('overdue' as const) : ('upcoming' as const) }),
   };
 }
 
 /** Everything Bills publishes, for `syncAgenda` (the kit keeps only the publishing window). */
-export function agendaItems(bills: Bill[], now: number, appUrl = APP_URL): AgendaInput[] {
+export function agendaItems(bills: Bill[], now: number, url = APP_URL): AgendaInput[] {
   return viewBills(bills, toYmd(now)).flatMap((v) => {
-    const item = itemFor(v, appUrl);
+    const item = itemFor(v, url);
     return item ? [{ ...item, ref: billRef(v.bill.id) }] : [];
   });
 }
@@ -48,9 +52,9 @@ export function agendaItems(bills: Bill[], now: number, appUrl = APP_URL): Agend
  * One bill's items, for `replaceAgenda` when it is saved: `bill` as written, read against the
  * household's other bills (a newer statement replaces an older one). Empty when it isn't due.
  */
-export function billAgenda(bill: Bill, bills: Bill[], now: number, appUrl = APP_URL): Item[] {
+export function billAgenda(bill: Bill, bills: Bill[], now: number, url = APP_URL): Item[] {
   const all = [...bills.filter((b) => b.id !== bill.id), bill];
   const view = viewBills(all, toYmd(now)).find((v) => v.bill.id === bill.id);
-  const item = view ? itemFor(view, appUrl) : null;
+  const item = view ? itemFor(view, url) : null;
   return item ? [item] : [];
 }
