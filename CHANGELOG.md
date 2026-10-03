@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/huishouden/bills/compare/v1.4.0...v1.5.0) (2026-10-03)
+
+
+### Features
+
+* Bills moves to /bills/ on the suite's one site (pwa-kit 0.48.0) ([#19](https://github.com/huishouden/bills/issues/19)) ([86f67f7](https://github.com/huishouden/bills/commit/86f67f73125a64d907d63f163b8e8adf82309519))
+
 ## [1.4.0](https://github.com/huishouden/bills/compare/v1.3.0...v1.4.0) (2026-10-03)
 
 
