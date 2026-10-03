@@ -18,8 +18,6 @@ import { COLLECTIONS, createActions, type Backend, type DataKey, type Op } from 
 import type { BillsStore, MailAccess } from './types';
 
 const clock = () => Date.now();
-/** How long after the bills change the to-do list is brought up to date (a burst of writes syncs once). */
-const TODO_DELAY = 3000;
 const path = (key: DataKey) => COLLECTIONS[key];
 
 /**
@@ -107,6 +105,10 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         }
       },
       sync: (bills: Bill[]) => void syncAgenda(db, householdId, AGENDA_APP, agendaItems(bills, clock()), { by: me }).catch(warn),
+      // The household's to-do list (bills to pay), written whole: on open and after every write here,
+      // at once, so it is up to date even if the app is closed right after. Paid or skipped on the
+      // portal, the item is removed there.
+      todos: (bills: Bill[]) => void syncTodos(db, householdId, AGENDA_APP, todoItems(bills, clock()), { by: me }).catch((e) => console.warn('To-do update failed', e)),
     };
   }, [householdId, me]);
 
@@ -120,18 +122,10 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     if (next.length) {
       void commitOps(db, base, next.map((n): Op => ({ col: 'bills', id: n.id, data: n.data })), path).catch((e) => errorRef.current(readError(e, "Couldn't add the next autopay bills")));
     }
-    agenda.sync([...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))]);
+    const all = [...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))];
+    agenda.sync(all);
+    agenda.todos(all);
   }, [billsFromServer, agenda, base, me]);
-
-  // The household's to-do list: bills to pay, on open and a few seconds after the bills change (a
-  // bill paid or skipped here or on the portal leaves it). Only admins and members get this far.
-  useEffect(() => {
-    if (!billsFromServer) return;
-    const timer = setTimeout(() => {
-      void syncTodos(db, householdId, AGENDA_APP, todoItems(billsRef.current, clock()), { by: me }).catch((e) => console.warn('To-do update failed', e));
-    }, TODO_DELAY);
-    return () => clearTimeout(timer);
-  }, [bills, billsFromServer, householdId, me]);
 
   const actions = useMemo(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));
@@ -140,12 +134,16 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       newId: (key) => doc(collection(db, base, path(key))).id,
       write: (ops) => {
         report(commitOps(db, base, ops, path));
-        agenda.follow(ops, applyOps(read(), ops).bills);
+        const bills = applyOps(read(), ops).bills;
+        agenda.follow(ops, bills);
+        if (ops.some((o) => o.col === 'bills')) agenda.todos(bills);
       },
       writeSync: async (ops) => {
         await commitOps(db, base, ops, path);
         // A check can add statements and replace older ones, so it reconciles the whole agenda.
-        agenda.sync(applyOps(read(), ops).bills);
+        const bills = applyOps(read(), ops).bills;
+        agenda.sync(bills);
+        agenda.todos(bills);
       },
     };
     return createActions(backend, read, me, clock);

@@ -111,7 +111,7 @@ Signed-in members of a Huishouden household read and write these documents under
   bill was added and `due` its due day. **Mark paid** writes what **Paid** does: `status: 'paid'`,
   `paidAt`, `paidBy` and `paidVia: 'member'`. **Skip** sets `dismissed`. Both add a repeating
   bill's next one under the id the app uses (`{id}~{due}`), and only admins and members can run
-  them. Synced when the app opens and 3 seconds after the bills change.
+  them. Written when the app opens and after every change to the bills made in it.
 
 The project's Firestore rules live in `huishouden/rules`.
 Nothing from a mailbox is stored except these parsed fields and the Gmail message id. The message
