@@ -54,8 +54,9 @@ describe('the sample household', () => {
     expect(h.total).toEqual({ amount: '3207.99', currency: 'USD' });
   });
 
-  test('history holds paid and presumed-drafted bills, newest first', () => {
+  test('history holds paid, presumed-drafted and skipped bills, newest first', () => {
     expect(history(views, TODAY).map((v) => `${v.bill.label} ${v.state}`)).toEqual([
+      'Example Window Cleaning skipped',
       'Example Home Loans autopaid',
       'Example Power Co paid',
       'Example Fiber autopaid',
@@ -63,9 +64,16 @@ describe('the sample household', () => {
     ]);
   });
 
-  test('a removed email bill disappears everywhere', () => {
+  test('a skipped bill leaves Upcoming and shows in history as skipped, even before its due date', () => {
     const bills = demoData().bills.map((b) => (b.id === 'power_2031-05-20' ? { ...b, dismissed: true } : b));
     const v = viewBills(bills, TODAY);
     expect(upcoming(v).week.map((x) => x.bill.label)).toEqual(['Example Fiber']);
+    expect(history(v, TODAY).filter((x) => x.state === 'skipped').map((x) => x.bill.id)).toEqual(['power_2031-05-20', 'manual-window-cleaning']);
+  });
+
+  test('a removed paid or drafted email bill stays hidden everywhere', () => {
+    const removed = ['power_2031-04-20', 'fiber_2031-04-16'];
+    const bills = demoData().bills.map((b) => (removed.includes(b.id) ? { ...b, dismissed: true } : b));
+    expect(viewBills(bills, TODAY).some((x) => removed.includes(x.bill.id))).toBe(false);
   });
 });

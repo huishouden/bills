@@ -30,6 +30,21 @@ test('mark paid moves a bill to history, and Undo brings it back', async ({ page
   await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' })).toBeVisible();
 });
 
+test('a skipped bill shows in history as skipped, and can be put back', async ({ page }) => {
+  await open(page);
+  await page.getByRole('button', { name: 'Skip Example Power Co' }).click();
+  await expect(page.getByText('Skipped Example Power Co')).toBeVisible();
+  await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'History', exact: true }).click();
+  const past = page.getByRole('list', { name: 'Past bills' });
+  await expect(past.getByRole('listitem', { name: 'Example Power Co' }).filter({ hasText: 'skipped' })).toBeVisible();
+  await expect(past.getByRole('listitem', { name: 'Example Window Cleaning' })).toContainText('skipped');
+  await page.getByRole('button', { name: 'Put Example Power Co back' }).click();
+  await expect(page.getByText('Example Power Co is back on the list')).toBeVisible();
+  await page.getByRole('button', { name: 'Upcoming', exact: true }).click();
+  await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' })).toBeVisible();
+});
+
 test('a repeating bill added by hand comes back after it is paid', async ({ page }) => {
   await open(page);
   await page.getByRole('button', { name: 'Add a bill' }).first().click();

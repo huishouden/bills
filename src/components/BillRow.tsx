@@ -1,8 +1,8 @@
-import { Check, ExternalLink, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { Check, ExternalLink, Mail, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { dueWords, shortDate } from '@huishouden/pwa-kit/time';
 import { KIND_LABELS, type Bill } from '../lib/model';
-import type { BillView } from '../lib/view';
+import { isOpen, type BillView } from '../lib/view';
 import { AutopayChip, KindIcon, personName } from './bits';
 import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
@@ -12,6 +12,8 @@ interface Props {
   me: string;
   onMarkPaid?: (bill: Bill) => void;
   onMarkUnpaid?: (bill: Bill) => void;
+  onSkip?: (bill: Bill) => void;
+  onUnskip?: (bill: Bill) => void;
   onEdit?: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
 }
@@ -33,14 +35,18 @@ function historyText(v: BillView, today: string, me: string): string {
   }
   if (state === 'credit') return `${due}; credit`;
   if (state === 'autopaid') return `${due}; paid by autopay`;
+  if (state === 'skipped') return `${due}; skipped`;
   return `${due}; replaced by a newer statement`;
 }
 
 /** One bill: what, when, how much, whether autopay covers it, and the actions that fit. */
-export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onEdit, onRemove }: Props) {
+export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onUnskip, onEdit, onRemove }: Props) {
   const { bill, state } = view;
   const attention = state === 'overdue' || state === 'attention';
-  const open = ['overdue', 'attention', 'autopay', 'upcoming', 'no-date'].includes(state);
+  const open = isOpen(state);
+  // Skip is for bills someone has to pay; an email bill can't be deleted, so for those Skip is its Remove.
+  const skippable = open && !bill.autopay?.enrolled && !!onSkip;
+  const removable = bill.source === 'manual' || (!skippable && state !== 'skipped');
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
   const meta = [KIND_LABELS[bill.kind], period, bill.source === 'manual' ? (bill.repeat ? `Added by hand, repeats ${bill.repeat}` : 'Added by hand') : 'From email'].filter(Boolean).join(' · ');
   return (
@@ -66,6 +72,16 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onEdit, onR
             <RotateCcw size={18} />
           </button>
         )}
+        {skippable && (
+          <button type="button" className={iconButton} onClick={() => onSkip!(bill)} aria-label={`Skip ${bill.label}`} title="Skip this one: not paying it here">
+            <SkipForward size={18} />
+          </button>
+        )}
+        {state === 'skipped' && onUnskip && (
+          <button type="button" className={iconButton} onClick={() => onUnskip(bill)} aria-label={`Put ${bill.label} back`} title="Not skipped after all">
+            <RotateCcw size={18} />
+          </button>
+        )}
         {bill.payUrl && open && (
           <a className={iconButton} href={bill.payUrl} target="_blank" rel="noreferrer" aria-label={`Pay ${bill.label} on its site`} title="Pay on the provider's site">
             <ExternalLink size={18} />
@@ -88,9 +104,11 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onEdit, onR
             <Pencil size={18} />
           </button>
         )}
-        <button type="button" className={iconButton} onClick={() => onRemove(bill)} aria-label={`Remove ${bill.label}`}>
-          <Trash2 size={18} />
-        </button>
+        {removable && (
+          <button type="button" className={iconButton} onClick={() => onRemove(bill)} aria-label={`Remove ${bill.label}`}>
+            <Trash2 size={18} />
+          </button>
+        )}
       </div>
     </li>
   );

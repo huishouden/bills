@@ -29,6 +29,33 @@ describe('bills actions', () => {
     expect(sorted(read().bills)).toEqual(sorted(before.bills));
   });
 
+  test('the next one of a repeating bill has the id the portal and rollovers use', () => {
+    const { actions, read } = setup();
+    const bill = read().bills.find((b) => b.id === 'manual-insurance')!;
+    actions.markPaid(bill);
+    expect(read().bills.find((b) => b.id === 'manual-insurance~2031-09-10')).toMatchObject({ due: '2031-09-10', status: 'due', createdAt: DEMO_NOW });
+  });
+
+  test('skipping marks the bill skipped and adds a repeating one\'s next; Undo puts both back', () => {
+    const { actions, writes, read } = setup();
+    const before = read();
+    const bill = before.bills.find((b) => b.id === 'manual-insurance')!;
+    const undo = actions.skipBill(bill);
+    expect(writes.at(-1)![0]).toEqual({ col: 'bills', id: bill.id, data: { dismissed: true, updatedAt: DEMO_NOW }, merge: true });
+    expect(read().bills.find((b) => b.id === bill.id)).toMatchObject({ dismissed: true, status: 'due' });
+    expect(read().bills.find((b) => b.id === 'manual-insurance~2031-09-10')).toMatchObject({ due: '2031-09-10', status: 'due' });
+    expect(read().bills.find((b) => b.id === 'manual-insurance~2031-09-10')!.dismissed).toBeUndefined();
+    undo();
+    expect(sorted(read().bills)).toEqual(sorted(before.bills));
+  });
+
+  test('a skipped bill can be put back', () => {
+    const { actions, read } = setup();
+    const bill = read().bills.find((b) => b.id === 'manual-window-cleaning')!;
+    actions.unskipBill(bill);
+    expect(read().bills.find((b) => b.id === bill.id)).toMatchObject({ dismissed: false, updatedAt: DEMO_NOW });
+  });
+
   test('removing an email bill only hides it; a manual one is deleted', () => {
     const { actions, writes, read } = setup();
     const email = read().bills.find((b) => b.source !== 'manual')!;
