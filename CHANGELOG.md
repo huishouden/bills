@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/huishouden/bills/compare/v1.5.0...v1.5.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* dialogs keep focus where it was tapped on phones (pwa-kit 0.51.0) ([#21](https://github.com/huishouden/bills/issues/21)) ([f353873](https://github.com/huishouden/bills/commit/f3538730655ce9bd46601c4ae3c1b1aacd4ab35d))
+
 ## [1.5.0](https://github.com/huishouden/bills/compare/v1.4.0...v1.5.0) (2026-10-03)
 
 
