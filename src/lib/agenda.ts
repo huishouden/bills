@@ -1,6 +1,6 @@
 import { allDayStart, type AgendaInput } from '@huishouden/pwa-kit/agenda';
 import { formatMoney } from '@huishouden/pwa-kit/money';
-import { appUrl } from '@huishouden/pwa-kit/site';
+import { appUrl, SUITE_ORIGIN } from '@huishouden/pwa-kit/site';
 import { capitalize } from '@huishouden/pwa-kit/i18n';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import { t } from '../i18n';
@@ -13,7 +13,7 @@ export const AGENDA_APP = 'bills';
  * The app's address on the suite's one site; there are no per-bill routes, so items open its
  * Upcoming screen. In the browser the origin is the page's, so staging links to staging.
  */
-export const APP_URL = appUrl(import.meta.env.BASE_URL ?? '/bills/', '', globalThis.location?.origin ?? 'https://huishouden-piekstra.web.app');
+export const APP_URL = appUrl(import.meta.env.BASE_URL ?? '/bills/', '', globalThis.location?.origin ?? SUITE_ORIGIN);
 
 export const billRef = (id: string) => `bill:${id}`;
 
