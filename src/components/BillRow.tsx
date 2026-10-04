@@ -6,6 +6,8 @@ import { isOpen, type BillView } from '../lib/view';
 import { AutopayChip, KindIcon, personName } from './bits';
 import { t, useT } from '../i18n';
 import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
+import { AddToCalendar } from '@huishouden/pwa-kit/react/calendar';
+import { billCalendarEntry } from '../lib/agenda';
 
 interface Props {
   view: BillView;
@@ -50,6 +52,7 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
   // Skip is for bills someone has to pay; an email bill can't be deleted, so for those Skip is its Remove.
   const skippable = open && !bill.autopay?.enrolled && !!onSkip;
   const removable = bill.source === 'manual' || (!skippable && state !== 'skipped');
+  const calendar = open ? billCalendarEntry(view) : null;
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
   const meta = [kindLabel(bill.kind), period, bill.source === 'manual' ? (bill.repeat ? t('row.addedByHandRepeats', { repeat: bill.repeat }) : t('row.addedByHand')) : t('row.fromEmail')]
     .filter(Boolean)
@@ -67,6 +70,7 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
       </div>
       <p className="flex-1 text-left sm:text-right text-xl font-semibold tabular-nums text-ink">{bill.amountDue ? formatMoney(bill.amountDue) : '—'}</p>
       <div className="flex flex-wrap items-center gap-1">
+        {calendar && <AddToCalendar entry={calendar} compact />}
         {open && onMarkPaid && (
           <button type="button" className={secondaryButton} onClick={() => onMarkPaid(bill)} aria-label={t('row.markPaid', { name: bill.label })}>
             <Check size={18} /> {t('row.paid')}
