@@ -7,6 +7,7 @@ import type { TodoInput } from '@huishouden/pwa-kit/todos';
 import { nextId, nextRepeat } from '../data/build';
 import { APP_URL, billRef } from './agenda';
 import type { Bill } from './model';
+import { NO_PAY, payAction, payInfo, type PayContext } from './pay';
 import { t } from '../i18n';
 import { HORIZON_DAYS, viewBills, type BillState } from './view';
 
@@ -27,20 +28,23 @@ function nextOp(bill: Bill): Op[] {
 
 /**
  * Bills to pay, for the household's to-do list (`syncTodos`): each unpaid, not skipped bill the
- * Upcoming screen lists without autopay, within its 30 days (or with no due date), in the page's
+ * Upcoming screen lists without autopay, within its 30 days (or with no due date), with how it is
+ * paid ("Pay Example Rentals by Zelle") from the bill or its source and `pay.contacts`, in the page's
  * language (wrap in `localizeTodos` for every language). "Mark paid"
  * writes what the app's Paid button does; "Skip" marks it skipped (kept in History). Both add a
  * repeating bill's next one, as the app does. Always private: Bills is money.
  */
-export function todoItems(bills: Bill[], now: number, url = APP_URL, horizon = HORIZON_DAYS): TodoInput[] {
+export function todoItems(bills: Bill[], now: number, url = APP_URL, horizon = HORIZON_DAYS, pay: PayContext = NO_PAY): TodoInput[] {
   return viewBills(bills, toYmd(now))
     .filter((v) => TO_PAY.includes(v.state) && !v.bill.autopay?.enrolled && (v.days === null || v.days <= horizon))
     .map(({ bill }): TodoInput => {
       const next = nextOp(bill);
+      // "$1,850.00 · Pay Example Rentals by Zelle"
+      const detail = [bill.amountDue ? formatMoney(bill.amountDue) : null, payAction(payInfo(bill, pay.sources, pay.contacts))].filter(Boolean).join(' · ');
       return {
         ref: billRef(bill.id),
         title: bill.label,
-        ...(bill.amountDue ? { detail: formatMoney(bill.amountDue) } : {}),
+        ...(detail ? { detail } : {}),
         createdAt: bill.createdAt,
         ...(bill.due ? { due: allDayStart(bill.due) } : {}),
         url,

@@ -1,8 +1,9 @@
-import { Building2, Droplet, Flame, House, Receipt, ShieldCheck, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
+import { Building2, Droplet, Flame, House, KeyRound, Receipt, ShieldCheck, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
 import type { Autopay, BillKind } from '../lib/model';
 import { t, useT } from '../i18n';
 
 const ICONS: Record<BillKind, LucideIcon> = {
+  rent: KeyRound,
   electric: Zap,
   gas: Flame,
   water: Droplet,

@@ -31,5 +31,5 @@ export function useDemoStore(clock: () => number): BillsStore {
       } };
   }, [clock]);
 
-  return { data, ready: true, actions, mail, me, members: DEMO_MEMBERS, clock, sample: true };
+  return { data, ready: true, actions, mail, me, members: DEMO_MEMBERS, payers: DEMO_MEMBERS, clock, sample: true };
 }

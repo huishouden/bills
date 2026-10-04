@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { centsToInput, moneyToCents, parseCents } from '@huishouden/pwa-kit/money';
-import { BILL_KINDS, kindLabel, type Bill, type BillKind, type ManualBillInput, type Repeat } from '../lib/model';
+import type { Contact, ContactInput } from '@huishouden/pwa-kit/contact-core';
+import { BILL_KINDS, kindLabel, type Bill, type BillKind, type BillSettings, type ManualBillInput, type PayFields, type Repeat } from '../lib/model';
+import { PaySection } from './PaySection';
 import { useT } from '../i18n';
 import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
@@ -13,6 +15,11 @@ interface Props {
   onClose: () => void;
   onSave: (input: ManualBillInput) => void;
   onDelete?: () => void;
+  contacts: readonly Contact[];
+  payers: readonly string[];
+  me: string;
+  settings: BillSettings | null;
+  onSaveContact: (input: ContactInput) => string;
 }
 
 const REPEATS = [
@@ -24,7 +31,7 @@ const REPEATS = [
 ] as const satisfies readonly (readonly [Repeat | null, string])[];
 
 /** A bill with no statement email: insurance, tolls, a neighbour's lawn service. */
-export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
+export function BillDialog({ bill, today, onClose, onSave, onDelete, contacts, payers, me, settings, onSaveContact }: Props) {
   const t = useT();
   const [label, setLabel] = useState(bill?.label ?? '');
   const [kind, setKind] = useState<BillKind>(bill?.kind ?? 'other');
@@ -34,6 +41,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
   const [autopay, setAutopay] = useState<boolean | null>(bill?.autopay ? bill.autopay.enrolled : null);
   const [repeat, setRepeat] = useState<Repeat | null>(bill?.repeat ?? null);
   const [payUrl, setPayUrl] = useState(bill?.payUrl ?? '');
+  const [pay, setPay] = useState<PayFields>({ payeeContactId: bill?.payeeContactId, payMethod: bill?.payMethod, payNote: bill?.payNote, payer: bill?.payer, remind: bill?.remind });
   const [problem, setProblem] = useState<string | null>(null);
 
   const save = () => {
@@ -42,7 +50,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
     if (!label.trim()) return setProblem(t('form.noName'));
     if (amount.trim() && money === null) return setProblem(t('billDialog.badAmount', { example: centsToInput(12000) }));
     if (payUrl.trim() && !payUrl.trim().startsWith('https://')) return setProblem(t('form.badLink'));
-    onSave({ label, kind, due: due || null, amount: money, autopay, repeat, payUrl: payUrl.trim() || undefined });
+    onSave({ label, kind, due: due || null, amount: money, autopay, repeat, payUrl: payUrl.trim() || undefined, ...pay });
     onClose();
   };
 
@@ -122,6 +130,16 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete }: Props) {
         <Field label={t('form.payLink')}>
           <input className={inputClass} type="url" value={payUrl} onChange={(e) => setPayUrl(e.target.value)} placeholder={URL_PLACEHOLDER} />
         </Field>
+        <PaySection
+          value={pay}
+          onChange={(patch) => setPay((p) => ({ ...p, ...patch }))}
+          contacts={contacts}
+          payers={payers}
+          me={me}
+          settings={settings}
+          autopay={autopay === true}
+          onSaveContact={onSaveContact}
+        />
         {problem && (
           <p role="alert" className="text-base text-error">
             {problem}

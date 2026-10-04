@@ -17,7 +17,7 @@ describe('todoItems for the sample household', () => {
   const items = todoItems(demoData().bills, NOW);
 
   test('publishes the bills someone has to pay within 30 days: not autopay, paid, skipped or later ones', () => {
-    expect(items.map((i) => i.ref).sort()).toEqual(['bill:hoa_2031-06-01', 'bill:manual-insurance', 'bill:power_2031-05-20', 'bill:water_2031-05-12']);
+    expect(items.map((i) => i.ref).sort()).toEqual(['bill:hoa_2031-06-01', 'bill:manual-insurance', 'bill:manual-rent~2031-06-08', 'bill:power_2031-05-20', 'bill:water_2031-05-12']);
   });
 
   test('each is the bill: its label, amount, when it was added and its due day, private', () => {
@@ -117,5 +117,11 @@ describe('running an item from the portal does what the app does', () => {
       const { portal } = both('power_2031-05-20', which);
       expect(todoItems(portal, NOW).some((i) => i.ref === 'bill:power_2031-05-20')).toBe(false);
     }
+  });
+
+  test('says who to pay and how, from the bill and the household contacts', () => {
+    const data = demoData();
+    const rent = todoItems(data.bills, NOW, undefined, undefined, { sources: data.sources, contacts: data.contacts }).find((i) => i.ref === 'bill:manual-rent~2031-06-08')!;
+    expect(rent).toMatchObject({ title: 'Rent', detail: '$1,850.00 · Pay Example Rentals by Zelle', private: true });
   });
 });

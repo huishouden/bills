@@ -16,7 +16,7 @@ test('loads without runtime errors and shows the sample bills', async ({ page })
   await page.clock.setFixedTime(fixedTime);
   await expectCleanLoad(page);
   await expect(page.getByText('Sample data')).toBeVisible();
-  await expect(page.getByRole('heading', { name: '7 bills in the next 30 days; 1 overdue; 4 without autopay' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '8 bills in the next 30 days; 1 overdue; 5 without autopay' })).toBeVisible();
   await expectHuishoudenFrame(page, { app: 'Bills', portalUrl: '/' });
 });
 

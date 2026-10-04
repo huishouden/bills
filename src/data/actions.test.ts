@@ -108,4 +108,46 @@ describe('bills actions', () => {
     expect(writes.at(-1)).toEqual([{ col: 'syncs', id: 'sam@example.com', data: status }]);
     expect(read().syncs.find((s) => s.id === 'sam@example.com')).toEqual({ id: 'sam@example.com', ...status });
   });
+
+  test('paying rent carries who it is paid to, how, who pays and its reminders to the next month', () => {
+    const { actions, read } = setup();
+    const rent = read().bills.find((b) => b.id === 'manual-rent~2031-06-08')!;
+    actions.markPaid(rent);
+    expect(read().bills.find((b) => b.id === 'manual-rent~2031-07-08')).toMatchObject({
+      due: '2031-07-08',
+      status: 'due',
+      payeeContactId: 'landlord',
+      payMethod: 'zelle',
+      payNote: 'rentals@example.com',
+      remind: { on: true, days: [3, 0], overdue: true },
+    });
+  });
+
+  test('saving a bill keeps its pay fields trimmed, and drops empty ones', () => {
+    const { actions, read } = setup();
+    actions.saveManualBill(null, { label: 'Rent', kind: 'rent', due: '2031-06-08', amount: '1850.00', autopay: false, repeat: 'monthly', payeeContactId: 'landlord', payMethod: 'zelle', payNote: '  rentals@example.com ', payer: 'Alex@Example.com', remind: { on: true, days: [0, 3, 3, 40] } });
+    const saved = read().bills.find((b) => b.label === 'Rent' && b.createdAt === DEMO_NOW && b.status === 'due' && b.payer)!;
+    expect(saved).toMatchObject({ payNote: 'rentals@example.com', payer: 'alex@example.com', remind: { on: true, days: [3, 0] } });
+    actions.saveManualBill(saved.id, { label: 'Rent', kind: 'rent', due: '2031-06-08', amount: '1850.00', autopay: false, repeat: 'monthly', payNote: ' ' });
+    const again = read().bills.find((b) => b.id === saved.id)!;
+    expect(again.payNote).toBeUndefined();
+    expect(again.payeeContactId).toBeUndefined();
+    expect(again.remind).toBeUndefined();
+  });
+
+  test('settings are one document, with the device\'s time zone when none is given', () => {
+    const { actions, writes } = setup();
+    actions.saveSettings({ remindDefault: 'manual', remindDays: [0, 7, 3], remindOverdue: false, timeZone: 'America/Chicago' });
+    expect(writes.at(-1)).toEqual([{ col: 'settings', id: 'main', data: { remindDefault: 'manual', remindDays: [7, 3, 0], remindOverdue: false, timeZone: 'America/Chicago', updatedAt: DEMO_NOW, updatedBy: 'sam@example.com' } }]);
+    actions.saveSettings({ remindDefault: 'none', remindDays: [], remindOverdue: true });
+    expect((writes.at(-1)![0].data as { timeZone: string }).timeZone).toBeTruthy();
+  });
+
+  test('a new contact gets an id the bill can name; an edit keeps when it was added', () => {
+    const { actions, read } = setup();
+    const id = actions.saveContact(null, { name: 'Example Rentals LLC', role: 'Landlord', email: 'office@example.com', apps: ['bills'] });
+    expect(read().contacts.find((c) => c.id === id)).toMatchObject({ name: 'Example Rentals LLC', private: false, createdAt: DEMO_NOW, by: 'sam@example.com' });
+    actions.saveContact('landlord', { name: 'Example Rentals', apps: ['home', 'bills'] });
+    expect(read().contacts.find((c) => c.id === 'landlord')).toMatchObject({ createdAt: DEMO_NOW - 90 * 86_400_000, updatedAt: DEMO_NOW });
+  });
 });
