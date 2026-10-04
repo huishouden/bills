@@ -205,7 +205,69 @@ test('a new contact from the bill dialog becomes who it is paid to', async ({ pa
   await contact.getByRole('button', { name: 'Save' }).click();
   await expect(dialog.getByLabel('Pay to')).toHaveValue(/.+/);
   await dialog.getByRole('group', { name: 'How to pay' }).getByRole('button', { name: 'Venmo' }).click();
-  await dialog.getByLabel('Payment details (optional)').fill('@example-lawns');
+  await dialog.getByLabel('Venmo @handle').fill('example-lawns');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('listitem', { name: 'Lawn care' })).toContainText('Venmo to Example Lawns · @example-lawns');
+});
+
+test.describe('on a phone: filling in how to pay from the payee', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("the payee's phone fills in Zelle, a new payee replaces it, typed text stays, and the next bill remembers", async ({ page }) => {
+    await open(page);
+    await page.getByRole('button', { name: 'Add a bill' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add a bill' });
+    await dialog.getByLabel('Name').first().fill('Drain repair');
+    const how = dialog.getByRole('group', { name: 'How to pay' });
+
+    // Method first, then the payee: their only phone fills in, to be remembered on them.
+    await how.getByRole('button', { name: 'Zelle' }).click();
+    await dialog.getByLabel('Pay to').selectOption({ label: 'Example Plumbing (Plumber)' });
+    const details = dialog.getByLabel('Zelle phone or email');
+    await expect(details).toHaveValue('(555) 010-0188');
+    await expect(dialog.getByText('Saved on Example Plumbing when you save, for their next bill.')).toBeVisible();
+
+    // Another payee replaces what was filled in: the landlord's saved Zelle email, their phone one tap away.
+    await dialog.getByLabel('Pay to').selectOption({ label: 'Example Rentals (Landlord)' });
+    await expect(details).toHaveValue('rentals@example.com');
+    await expect(dialog.getByText('Saved on Example Rentals.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Use (555) 010-0123' }).click();
+    await expect(details).toHaveValue('(555) 010-0123');
+
+    // Typed text is never replaced.
+    await details.fill('plumbing@example.com');
+    await dialog.getByLabel('Pay to').selectOption({ label: 'Example Plumbing (Plumber)' });
+    await expect(details).toHaveValue('plumbing@example.com');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('listitem', { name: 'Drain repair' })).toContainText('Zelle to Example Plumbing · plumbing@example.com');
+
+    // The next bill to them, payee first: filled in from what was saved.
+    await page.getByRole('button', { name: 'Add a bill' }).first().click();
+    await dialog.getByLabel('Name').first().fill('Water heater');
+    await dialog.getByLabel('Pay to').selectOption({ label: 'Example Plumbing (Plumber)' });
+    await how.getByRole('button', { name: 'Zelle' }).click();
+    await expect(dialog.getByLabel('Zelle phone or email')).toHaveValue('plumbing@example.com');
+    await expect(dialog.getByText('Saved on Example Plumbing.')).toBeVisible();
+  });
+
+  test('an online portal is a link, with Open in the row; a new contact keeps how to pay them', async ({ page }) => {
+    await open(page);
+    await page.getByRole('button', { name: 'Add a bill' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add a bill' });
+    await dialog.getByLabel('Name').first().fill('Parking permit');
+    await dialog.getByRole('button', { name: 'New contact' }).click();
+    const contact = page.getByRole('dialog', { name: 'New contact' });
+    await contact.getByLabel('Name', { exact: true }).fill('Example City');
+    await expect(contact.getByText('How to pay them')).toBeVisible();
+    await contact.getByLabel('Online portal').fill('pay.example.com/parking');
+    await contact.getByRole('button', { name: 'Save' }).click();
+    await dialog.getByRole('group', { name: 'How to pay' }).getByRole('button', { name: 'Online portal' }).click();
+    await expect(dialog.getByLabel('Portal link')).toHaveValue('https://pay.example.com/parking');
+    await expect(dialog.getByText('Saved on Example City.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    const row = page.getByRole('listitem', { name: 'Parking permit' });
+    await expect(row).toContainText('Online portal to Example City');
+    await expect(row.getByRole('link', { name: 'Pay Parking permit on its site' })).toHaveAttribute('href', 'https://pay.example.com/parking');
+    await expect(row.getByRole('link', { name: 'Pay Parking permit on its site' })).toContainText('Open');
+  });
 });
