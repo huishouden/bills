@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "test": "bun test src",
     "e2e": "playwright test e2e/smoke.spec.ts e2e/bills.spec.ts e2e/gmail.spec.ts e2e/i18n.spec.ts",
-    "e2e:signed-in": "playwright test e2e/signed-in.spec.ts",
+    "e2e:signed-in": "playwright test e2e/signed-in.spec.ts e2e/contact-pay.spec.ts",
+    "e2e:emulator": "playwright test e2e/contact-pay.spec.ts --grep-invert @staging",
     "screenshots": "playwright test e2e/screenshots.spec.ts",
     "icons": "pwa-logo card public/icon.svg && pwa-icons --background=#1b4332",
     "prepare": "git config core.hooksPath .githooks",
@@ -24,7 +25,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@huishouden/pwa-kit": "github:huishouden/pwa-kit#v0.82.0",
+    "@huishouden/pwa-kit": "github:huishouden/pwa-kit#v0.82.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/bun": "^1.4.2",
