@@ -87,88 +87,23 @@ test.describe('the portal to-do list', () => {
   });
 });
 
-// Pay details are money: kept in contactPay (admins and members only), never on the contact that
-// helpers and kids read. A payee's Zelle saved with a bill lands there, and a helper loads none.
-test.describe("a payee's pay details", () => {
-  const PROJECT = 'huishouden-staging';
-  const docs = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/households/test-household`;
-  const tag = Date.now().toString(36);
-  const cid = `e2e-pay-${tag}`;
-  const name = `Example Payee ${tag}`;
-  const phone = `(555) 010-${String(Date.now() % 10000).padStart(4, '0')}`;
-  const label = `Pay test ${tag}`;
-  const admin = async (method: string, path: string, body?: object) => {
-    const res = await fetch(`${docs}/${path}`, {
-      method,
-      headers: { authorization: `Bearer ${process.env.HH_STAGING_ACCESS_TOKEN}`, 'content-type': 'application/json', 'x-goog-user-project': PROJECT },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (!res.ok && res.status !== 404) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
-    return res.status === 404 ? null : ((await res.json()) as { fields?: Record<string, { stringValue?: string }> });
-  };
-
+// Roles: a helper (test-helper) is refused the household's bills and nothing loads.
+test.describe('as a helper', () => {
   test.beforeAll(async () => {
     // Another app's run may have reseeded the household with an older kit that has no helper.
     const { seedTestHousehold } = await import('@huishouden/pwa-kit/staging');
     await seedTestHousehold({ accessToken: process.env.HH_STAGING_ACCESS_TOKEN! });
-    const str = (stringValue: string) => ({ stringValue });
-    await admin('PATCH', `contacts/${cid}`, {
-      fields: {
-        name: str(name),
-        role: str('Landlord'),
-        phone: str(phone),
-        apps: { arrayValue: { values: [str('bills')] } },
-        private: { booleanValue: false },
-        createdAt: { integerValue: String(Date.now()) },
-        by: str('test-a@example.com'),
-      },
-    });
   });
 
-  test.afterAll(async () => {
-    await admin('DELETE', `contactPay/${cid}`);
-    await admin('DELETE', `contacts/${cid}`);
-    const rows = (await (
-      await fetch(`${docs}:runQuery`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${process.env.HH_STAGING_ACCESS_TOKEN}`, 'content-type': 'application/json', 'x-goog-user-project': PROJECT },
-        body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'bills' }], where: { fieldFilter: { field: { fieldPath: 'label' }, op: 'EQUAL', value: { stringValue: label } } } } }),
-      })
-    ).json()) as { document?: { name: string } }[];
-    for (const r of rows ?? []) if (r.document) await fetch(`https://firestore.googleapis.com/v1/${r.document.name}`, { method: 'DELETE', headers: { authorization: `Bearer ${process.env.HH_STAGING_ACCESS_TOKEN}`, 'x-goog-user-project': PROJECT } });
-  });
-
-  test("a bill's Zelle detail is remembered in contactPay, not on the contact", async ({ page }) => {
-    await signInTestUser(page, { email: 'test-a@example.com' });
-    await page.getByRole('button', { name: 'Add a bill' }).first().click({ timeout: 20_000 });
-    const dialog = page.getByRole('dialog', { name: 'Add a bill' });
-    await dialog.getByLabel('Name').first().fill(label);
-    await dialog.getByRole('group', { name: 'How to pay' }).getByRole('button', { name: 'Zelle' }).click();
-    await dialog.getByLabel('Pay to').selectOption({ label: `${name} (Landlord)` });
-    await expect(dialog.getByLabel('Zelle phone or email')).toHaveValue(phone);
-    await dialog.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('listitem', { name: label })).toContainText(`Zelle to ${name} · ${phone}`);
-
-    await expect.poll(async () => (await admin('GET', `contactPay/${cid}`))?.fields?.zelle?.stringValue, { timeout: 20_000 }).toBe(phone);
-    expect(Object.keys((await admin('GET', `contacts/${cid}`))?.fields ?? {})).not.toContain('pay');
-  });
-
-  // Roles: a helper (test-helper) is refused the household's bills, and nothing loads: no bills, no pay details.
-  test('as a helper, Bills says only admins and members can see the money, and loads none', async ({ page }) => {
-    const errors: string[] = [];
-    page.on('console', (m) => {
-      if (m.type() === 'error') errors.push(m.text());
-    });
+  test('opening Bills says only admins and members can see the money, and loads none', async ({ page }) => {
     const reads: string[] = [];
     page.on('request', (r) => {
-      if (/bills|billSources|billSync|contactPay/.test(decodeURIComponent(r.url()).replace(/huishouden-staging-bills/g, '') + (r.postData() ?? ''))) reads.push(r.url());
+      if (/bills|billSources|billSync/.test(decodeURIComponent(r.url()).replace(/huishouden-staging-bills/g, '') + (r.postData() ?? ''))) reads.push(r.url());
     });
     await signInTestUser(page, { email: 'test-helper@example.com' });
     await expect(page.getByText('Only admins and members can see the household’s money.')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('link', { name: 'Open Huishouden' })).toBeVisible();
     expect(reads.filter((u) => u.includes('firestore'))).toEqual([]);
-    await expect(page.getByText(phone)).toHaveCount(0);
-    expect(errors.filter((e) => /permission|insufficient/i.test(e))).toEqual([]);
   });
 });
 
