@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/huishouden/bills/compare/v1.10.0...v1.11.0) (2026-10-04)
+
+
+### Features
+
+* bill reminders, and who a bill is paid to and how (kit 0.77.0) ([#37](https://github.com/huishouden/bills/issues/37)) ([77c848f](https://github.com/huishouden/bills/commit/77c848f03c9665946531a9e9c6d2840466e62e73))
+
 ## [1.10.0](https://github.com/huishouden/bills/compare/v1.9.0...v1.10.0) (2026-10-04)
 
 
