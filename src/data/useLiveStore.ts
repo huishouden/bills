@@ -5,6 +5,7 @@ import { applyOps } from '@huishouden/pwa-kit/store';
 import type { Bill, BillSettings, BillSource, BillSuggestion, BillSuggestionDoc, BillSync } from '../lib/model';
 import { watchContacts, type Contact } from '@huishouden/pwa-kit/contacts';
 import { localizeReminders, syncReminders } from '@huishouden/pwa-kit/reminders';
+import { useHome } from '@huishouden/pwa-kit/react/home';
 import { billReminders } from '../lib/reminders';
 import type { PayContext } from '../lib/pay';
 import { spendingSince, toCharge } from '../lib/suggestions';
@@ -214,6 +215,8 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   const day = toYmd(clock());
   const remindersReady = billsFromServer && answered.sources && extrasLoaded.contacts && extrasLoaded.settings;
   const lastReminders = useRef('');
+  // The household's home zone sets the reminders' clock: a change rewrites them.
+  const homeZone = useHome()?.timeZone;
   useEffect(() => {
     if (!remindersReady) return;
     const id = setTimeout(() => {
@@ -230,7 +233,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         });
     }, 1500);
     return () => clearTimeout(id);
-  }, [remindersReady, bills, sources, contacts, settings, householdId, me, day]);
+  }, [remindersReady, bills, sources, contacts, settings, householdId, me, day, homeZone]);
 
   const live = useMemo(() => ({ householdId, email: me }), [householdId, me]);
   return {
