@@ -101,3 +101,20 @@ describe('privacy', () => {
     for (const item of items) expect(agendaDoc(AGENDA_APP, item, 'sam@example.com', NOW).private).toBe(true);
   });
 });
+
+describe('Add to calendar on a bill row', () => {
+  test('an open bill gives the same entry it publishes; a paid one none, and no bill carries edits', async () => {
+    const { billCalendarEntry } = await import('./agenda');
+    const { viewBills } = await import('./view');
+    const { toYmd } = await import('@huishouden/pwa-kit/time');
+    const views = viewBills(demoData().bills, toYmd(NOW));
+    const published = agendaItems(demoData().bills, NOW);
+    for (const v of views) {
+      const entry = billCalendarEntry(v);
+      const item = published.find((i) => i.ref === billRef(v.bill.id));
+      if (item) expect({ ...entry, ref: item.ref }).toEqual(item);
+      else expect(entry).toBeNull();
+    }
+    expect(published.every((i) => i.edit === undefined)).toBe(true);
+  });
+});
