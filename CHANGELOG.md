@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/huishouden/bills/compare/v1.12.0...v1.12.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* payees' pay details in contactPay, never on the contact (kit 0.82.0) ([#42](https://github.com/huishouden/bills/issues/42)) ([a631c14](https://github.com/huishouden/bills/commit/a631c142a501444fd64bb0e28995cba672954222))
+
 ## [1.12.0](https://github.com/huishouden/bills/compare/v1.11.0...v1.12.0) (2026-10-04)
 
 
