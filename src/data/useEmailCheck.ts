@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { discoverSources, syncFromMailbox, type Mailbox, type Proposal } from '../lib/emailSync';
 import { gmailError } from '@huishouden/pwa-kit/gmail';
 import type { BillsStore } from './types';
+import { t } from '../i18n';
 
 export type CheckState =
   | { status: 'idle' }
@@ -49,7 +50,7 @@ export function useEmailCheck(store: BillsStore) {
     setDiscovery({ status: 'searching' });
     try {
       const box = await mailbox(true);
-      if (!box) throw new Error('Gmail was not connected.');
+      if (!box) throw new Error(t('email.notConnected'));
       setDiscovery({ status: 'done', proposals: await discoverSources(box, storeRef.current.data.sources) });
     } catch (e) {
       setDiscovery({ status: 'error', message: gmailError(e) });

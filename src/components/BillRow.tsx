@@ -1,9 +1,10 @@
 import { Check, ExternalLink, Mail, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { dueWords, shortDate } from '@huishouden/pwa-kit/time';
-import { KIND_LABELS, type Bill } from '../lib/model';
+import { kindLabel, type Bill } from '../lib/model';
 import { isOpen, type BillView } from '../lib/view';
 import { AutopayChip, KindIcon, personName } from './bits';
+import { t, useT } from '../i18n';
 import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
 interface Props {
@@ -20,27 +21,29 @@ interface Props {
 
 function whenText(v: BillView, today: string): string {
   const { bill, state, days } = v;
-  if (!bill.due) return 'No due date';
-  if (state === 'overdue') return days === -1 ? 'Overdue since yesterday' : `Overdue by ${-days!} days`;
-  if (state === 'autopay' && bill.autopay?.nextDraft && bill.autopay.nextDraft !== bill.due) return `Due ${dueWords(bill.due, today)}; drafts ${dueWords(bill.autopay.nextDraft, today)}`;
-  return `Due ${dueWords(bill.due, today)}`;
+  if (!bill.due) return t('row.noDueDate');
+  if (state === 'overdue') return days === -1 ? t('row.overdueYesterday') : t('row.overdueBy', { days: -days! });
+  if (state === 'autopay' && bill.autopay?.nextDraft && bill.autopay.nextDraft !== bill.due)
+    return t('row.dueDrafts', { when: dueWords(bill.due, today, { inline: true }), draft: dueWords(bill.autopay.nextDraft, today, { inline: true }) });
+  return t('row.due', { when: dueWords(bill.due, today, { inline: true }) });
 }
 
 function historyText(v: BillView, today: string, me: string): string {
   const { bill, state } = v;
-  const due = bill.due ? `Due ${shortDate(bill.due, today)}` : 'No due date';
+  const due = bill.due ? t('row.due', { when: shortDate(bill.due, today) }) : t('row.noDueDate');
   if (state === 'paid') {
-    if (bill.paidVia === 'email') return `${due}; payment email received`;
-    return `${due}; marked paid${bill.paidBy ? ` by ${personName(bill.paidBy, me)}` : ''}`;
+    if (bill.paidVia === 'email') return t('row.historyPaidEmail', { due });
+    return bill.paidBy ? t('row.historyPaidBy', { due, name: personName(bill.paidBy, me) }) : t('row.historyPaid', { due });
   }
-  if (state === 'credit') return `${due}; credit`;
-  if (state === 'autopaid') return `${due}; paid by autopay`;
-  if (state === 'skipped') return `${due}; skipped`;
-  return `${due}; replaced by a newer statement`;
+  if (state === 'credit') return t('row.historyCredit', { due });
+  if (state === 'autopaid') return t('row.historyAutopaid', { due });
+  if (state === 'skipped') return t('row.historySkipped', { due });
+  return t('row.historySuperseded', { due });
 }
 
 /** One bill: what, when, how much, whether autopay covers it, and the actions that fit. */
 export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onUnskip, onEdit, onRemove }: Props) {
+  const t = useT();
   const { bill, state } = view;
   const attention = state === 'overdue' || state === 'attention';
   const open = isOpen(state);
@@ -48,7 +51,9 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
   const skippable = open && !bill.autopay?.enrolled && !!onSkip;
   const removable = bill.source === 'manual' || (!skippable && state !== 'skipped');
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
-  const meta = [KIND_LABELS[bill.kind], period, bill.source === 'manual' ? (bill.repeat ? `Added by hand, repeats ${bill.repeat}` : 'Added by hand') : 'From email'].filter(Boolean).join(' · ');
+  const meta = [kindLabel(bill.kind), period, bill.source === 'manual' ? (bill.repeat ? t('row.addedByHandRepeats', { repeat: bill.repeat }) : t('row.addedByHand')) : t('row.fromEmail')]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <li className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_10.5rem] lg:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_14.5rem] sm:flex-nowrap rounded-xl px-3 ${attention ? 'bg-attention-tint/40' : ''}`} aria-label={bill.label}>
       <KindIcon kind={bill.kind} attention={attention} />
@@ -63,27 +68,27 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
       <p className="flex-1 text-left sm:text-right text-xl font-semibold tabular-nums text-ink">{bill.amountDue ? formatMoney(bill.amountDue) : '—'}</p>
       <div className="flex flex-wrap items-center gap-1">
         {open && onMarkPaid && (
-          <button type="button" className={secondaryButton} onClick={() => onMarkPaid(bill)} aria-label={`Mark ${bill.label} paid`}>
-            <Check size={18} /> Paid
+          <button type="button" className={secondaryButton} onClick={() => onMarkPaid(bill)} aria-label={t('row.markPaid', { name: bill.label })}>
+            <Check size={18} /> {t('row.paid')}
           </button>
         )}
         {state === 'paid' && bill.paidVia === 'member' && onMarkUnpaid && (
-          <button type="button" className={iconButton} onClick={() => onMarkUnpaid(bill)} aria-label={`Mark ${bill.label} not paid`} title="Not paid after all">
+          <button type="button" className={iconButton} onClick={() => onMarkUnpaid(bill)} aria-label={t('row.markUnpaid', { name: bill.label })} title={t('row.notPaidTitle')}>
             <RotateCcw size={18} />
           </button>
         )}
         {skippable && (
-          <button type="button" className={iconButton} onClick={() => onSkip!(bill)} aria-label={`Skip ${bill.label}`} title="Skip this one: not paying it here">
+          <button type="button" className={iconButton} onClick={() => onSkip!(bill)} aria-label={t('row.skip', { name: bill.label })} title={t('row.skipTitle')}>
             <SkipForward size={18} />
           </button>
         )}
         {state === 'skipped' && onUnskip && (
-          <button type="button" className={iconButton} onClick={() => onUnskip(bill)} aria-label={`Put ${bill.label} back`} title="Not skipped after all">
+          <button type="button" className={iconButton} onClick={() => onUnskip(bill)} aria-label={t('row.putBack', { name: bill.label })} title={t('row.notSkippedTitle')}>
             <RotateCcw size={18} />
           </button>
         )}
         {bill.payUrl && open && (
-          <a className={iconButton} href={bill.payUrl} target="_blank" rel="noreferrer" aria-label={`Pay ${bill.label} on its site`} title="Pay on the provider's site">
+          <a className={iconButton} href={bill.payUrl} target="_blank" rel="noreferrer" aria-label={t('row.pay', { name: bill.label })} title={t('row.payTitle')}>
             <ExternalLink size={18} />
           </a>
         )}
@@ -93,19 +98,19 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
             href={`https://mail.google.com/mail/#all/${encodeURIComponent(bill.emailId)}`}
             target="_blank"
             rel="noreferrer"
-            aria-label={`Open the ${bill.label} email in Gmail`}
-            title="Open the email in Gmail (the mailbox that checked it)"
+            aria-label={t('row.openEmail', { name: bill.label })}
+            title={t('row.openEmailTitle')}
           >
             <Mail size={18} />
           </a>
         )}
         {bill.source === 'manual' && onEdit && (
-          <button type="button" className={iconButton} onClick={() => onEdit(bill)} aria-label={`Edit ${bill.label}`}>
+          <button type="button" className={iconButton} onClick={() => onEdit(bill)} aria-label={t('row.edit', { name: bill.label })}>
             <Pencil size={18} />
           </button>
         )}
         {removable && (
-          <button type="button" className={iconButton} onClick={() => onRemove(bill)} aria-label={`Remove ${bill.label}`}>
+          <button type="button" className={iconButton} onClick={() => onRemove(bill)} aria-label={t('row.remove', { name: bill.label })}>
             <Trash2 size={18} />
           </button>
         )}

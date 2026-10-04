@@ -17,6 +17,7 @@ import type { BillsStore } from './data/types';
 import { History } from './screens/History';
 import { Sources } from './screens/Sources';
 import { Upcoming } from './screens/Upcoming';
+import { useT } from './i18n';
 
 type TabId = 'upcoming' | 'history' | 'sources';
 
@@ -33,14 +34,16 @@ interface Props {
   banner?: ReactNode;
 }
 
-const TABS: Tab[] = [
-  { id: 'upcoming', label: 'Upcoming', icon: CalendarClock },
-  { id: 'history', label: 'History', icon: HistoryIcon },
-  { id: 'sources', label: 'Sources', icon: Mail },
-];
+const TABS = [
+  { id: 'upcoming', key: 'tabs.upcoming', icon: CalendarClock },
+  { id: 'history', key: 'tabs.history', icon: HistoryIcon },
+  { id: 'sources', key: 'tabs.sources', icon: Mail },
+] as const;
 
 /** Everything inside the frame once there is data to show (live or sample). */
 export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, notify, clearToast, banner }: Props) {
+  const t = useT();
+  const tabs: Tab[] = useMemo(() => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon })), [t]);
   const { now } = useClock();
   const today = toYmd(now);
   const [tab, setTab] = useState<TabId>('upcoming');
@@ -54,39 +57,39 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   const suggested = useMemo(() => suggestions(charges, today, bills, sources, answers), [charges, today, bills, sources, answers]);
 
   useEffect(() => {
-    document.title = 'Huishouden Bills';
-  }, []);
+    document.title = t('app.documentTitle');
+  }, [t]);
 
   const find = () => {
     setFinding(true);
     void email.discover();
   };
-  const markPaid = (bill: Bill) => notify(`Marked ${bill.label} paid`, actions.markPaid(bill));
+  const markPaid = (bill: Bill) => notify(t('toast.markedPaid', { name: bill.label }), actions.markPaid(bill));
   const markUnpaid = (bill: Bill) => {
     actions.markUnpaid(bill);
-    notify(`${bill.label} is unpaid again`, () => actions.restoreBill(bill));
+    notify(t('toast.unpaidAgain', { name: bill.label }), () => actions.restoreBill(bill));
   };
-  const skip = (bill: Bill) => notify(`Skipped ${bill.label}`, actions.skipBill(bill));
+  const skip = (bill: Bill) => notify(t('toast.skipped', { name: bill.label }), actions.skipBill(bill));
   const unskip = (bill: Bill) => {
     actions.unskipBill(bill);
-    notify(`${bill.label} is back on the list`, () => actions.restoreBill(bill));
+    notify(t('toast.backOnList', { name: bill.label }), () => actions.restoreBill(bill));
   };
   const remove = (bill: Bill) => {
     actions.removeBill(bill);
-    notify(`Removed ${bill.label}`, () => actions.restoreBill(bill));
+    notify(t('toast.removed', { name: bill.label }), () => actions.restoreBill(bill));
   };
 
   const addSuggestion = (c: RecurringCandidate) => {
     const input = suggestionBill(c, suggested.all);
-    notify(`Added ${input.label}`, actions.addSuggestion(c, input));
+    notify(t('toast.added', { name: input.label }), actions.addSuggestion(c, input));
   };
   const dismissSuggestion = (c: RecurringCandidate) => {
     const name = suggestionLabel(c, suggested.all);
-    notify(`${name} won't be suggested again`, actions.dismissSuggestion(c, name));
+    notify(t('toast.wontSuggest', { name }), actions.dismissSuggestion(c, name));
   };
 
   let content: ReactNode;
-  if (!store.ready) content = <p className="p-2 text-lg text-muted">Loading the household's bills</p>;
+  if (!store.ready) content = <p className="p-2 text-lg text-muted">{t('app.loading')}</p>;
   else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
   else if (tab === 'sources')
     content = <Sources store={store} now={now} check={email.state} onCheck={() => void email.check()} onFind={find} onAdd={() => setSourceDialog('new')} onEdit={setSourceDialog} />;
@@ -113,7 +116,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
 
   return (
     <div className="flex min-h-dvh flex-col bg-page font-sans text-ink antialiased">
-      <Header tabs={TABS} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} />
+      <Header tabs={tabs} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} />
       <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-4 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-6">
         {banner}
         {content}
@@ -126,7 +129,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
           onClose={() => setBillDialog(null)}
           onSave={(input) => {
             actions.saveManualBill(billDialog === 'new' ? null : billDialog.id, input);
-            if (billDialog === 'new') notify(`Added ${input.label.trim()}`);
+            if (billDialog === 'new') notify(t('toast.added', { name: input.label.trim() }));
           }}
           onDelete={billDialog === 'new' ? undefined : () => remove(billDialog)}
         />
@@ -137,12 +140,12 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
           onClose={() => setSourceDialog(null)}
           onSave={(input) => {
             actions.saveSource(sourceDialog === 'new' ? null : sourceDialog.id, input);
-            if (sourceDialog === 'new') notify(`Added ${input.name.trim()}. Check email to read its bills.`);
+            if (sourceDialog === 'new') notify(t('toast.sourceAdded', { name: input.name.trim() }));
           }}
           onDelete={
             sourceDialog === 'new'
               ? undefined
-              : () => notify(`Deleted ${sourceDialog.name} and its unpaid bills`, actions.deleteSource(sourceDialog))
+              : () => notify(t('toast.sourceDeleted', { name: sourceDialog.name }), actions.deleteSource(sourceDialog))
           }
         />
       )}
