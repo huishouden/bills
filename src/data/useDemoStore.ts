@@ -5,6 +5,7 @@ import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
 import { sampleMailbox } from '../lib/sampleMailbox';
 import { createActions, type Backend, type DataKey } from './actions';
 import type { BillsStore, MailAccess } from './types';
+import { t } from '../i18n';
 
 /**
  * Sample data kept in memory: the signed-out app is fully clickable, nothing is saved, and a reload
@@ -25,7 +26,9 @@ export function useDemoStore(clock: () => number): BillsStore {
 
   const mail = useMemo<MailAccess>(() => {
     const box = () => (typeof window !== 'undefined' && window.__gmailTestToken ? gmailMailbox(window.__gmailTestToken) : sampleMailbox(clock));
-    return { stored: box, request: async () => box(), note: 'Sample mode reads an invented mailbox. Sign in to read your own.' };
+    return { stored: box, request: async () => box(), get note() {
+        return t('email.noteSample');
+      } };
   }, [clock]);
 
   return { data, ready: true, actions, mail, me, members: DEMO_MEMBERS, clock, sample: true };

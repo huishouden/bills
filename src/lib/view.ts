@@ -1,6 +1,7 @@
 import { sumMoney } from '@huishouden/pwa-kit/money';
 import { daysBetween } from '@huishouden/pwa-kit/time';
 import type { Bill, Money, Ymd } from './model';
+import { t } from '../i18n';
 
 /**
  * How a bill reads on the main screen.
@@ -104,15 +105,13 @@ export interface Headline {
   text: string;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 /** "3 bills in the next 30 days; 1 without autopay" for the top of the screen (and a Today card later). */
 export function headline(u: Upcoming): Headline {
   const due = [...u.overdue, ...u.week, ...u.later];
   const withoutAutopay = due.filter((v) => v.state === 'overdue' || v.state === 'attention' || (v.state === 'upcoming' && !v.bill.autopay?.enrolled)).length;
   const total = sumMoney(due.map((v) => v.bill.amountDue).filter((m): m is Money => !!m && !m.amount.startsWith('-')));
-  const parts = [due.length ? `${plural(due.length, 'bill')} in the next ${HORIZON_DAYS} days` : `No bills in the next ${HORIZON_DAYS} days`];
-  if (u.overdue.length) parts.push(`${u.overdue.length} overdue`);
-  if (withoutAutopay) parts.push(`${withoutAutopay} without autopay`);
+  const parts = [due.length ? t('headline.bills', { count: due.length, days: HORIZON_DAYS }) : t('headline.none', { days: HORIZON_DAYS })];
+  if (u.overdue.length) parts.push(t('headline.overdue', { count: u.overdue.length }));
+  if (withoutAutopay) parts.push(t('headline.withoutAutopay', { count: withoutAutopay }));
   return { count: due.length, withoutAutopay, overdue: u.overdue.length, total, text: parts.join('; ') };
 }

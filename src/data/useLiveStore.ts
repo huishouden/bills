@@ -12,6 +12,7 @@ import { syncTodos } from '@huishouden/pwa-kit/todos';
 import { todoItems } from '../lib/todos';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
+import { t } from '../i18n';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
 import { autopayRollovers } from './build';
 import { COLLECTIONS, createActions, type Backend, type DataKey, type Op } from './actions';
@@ -44,7 +45,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   const base = `households/${householdId}`;
 
   useEffect(() => {
-    const fail = (what: string) => (e: Error) => errorRef.current(readError(e, `Couldn't load ${what}`));
+    const fail = (prefix: string) => (e: Error) => errorRef.current(readError(e, prefix));
     const unsubs = [
       onSnapshot(
         collection(db, base, 'bills'),
@@ -56,7 +57,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         },
         (e) => {
           setAnswered((a) => ({ ...a, bills: true }));
-          fail('the bills')(e);
+          fail(t('live.loadBills'))(e);
         },
       ),
       onSnapshot(
@@ -67,18 +68,18 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         },
         (e) => {
           setAnswered((a) => ({ ...a, sources: true }));
-          fail('the bill sources')(e);
+          fail(t('live.loadSources'))(e);
         },
       ),
       onSnapshot(
         collection(db, base, 'billSync'),
         (s) => setSyncs(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<BillSync, 'id'>) }))),
-        fail('the email checks'),
+        fail(t('live.loadSyncs')),
       ),
       onSnapshot(
         collection(db, base, 'billSuggestions'),
         (s) => setAnswers(s.docs.map((d) => ({ id: d.id, ...(d.data() as BillSuggestionDoc) }))),
-        fail('the suggested bills'),
+        fail(t('live.loadSuggestions')),
       ),
       // Card spending from Huishouden Spending, read only, for "Possible regular bills". A failure
       // here only hides the suggestions, so it is logged rather than shown.
@@ -120,7 +121,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     const now = clock();
     const next = autopayRollovers(billsRef.current, toYmd(now), me, now);
     if (next.length) {
-      void commitOps(db, base, next.map((n): Op => ({ col: 'bills', id: n.id, data: n.data })), path).catch((e) => errorRef.current(readError(e, "Couldn't add the next autopay bills")));
+      void commitOps(db, base, next.map((n): Op => ({ col: 'bills', id: n.id, data: n.data })), path).catch((e) => errorRef.current(readError(e, t('live.addNext'))));
     }
     const all = [...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))];
     agenda.sync(all);
@@ -128,7 +129,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   }, [billsFromServer, agenda, base, me]);
 
   const actions = useMemo(() => {
-    const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));
+    const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, t('live.save'))));
     const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current });
     const backend: Backend = {
       newId: (key) => doc(collection(db, base, path(key))).id,
@@ -156,7 +157,9 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         return token ? gmailMailbox(token) : null;
       },
       request: async () => gmailMailbox(await requestGmailToken(auth)),
-      note: 'Google will warn that the app is unverified the first time. Bills only reads statement emails and never changes your mail.',
+      get note() {
+        return t('email.noteLive');
+      },
     }),
     [],
   );
