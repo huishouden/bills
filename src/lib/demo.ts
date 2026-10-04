@@ -1,6 +1,6 @@
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { addDays, addMonths } from '@huishouden/pwa-kit/time';
-import type { Contact } from '@huishouden/pwa-kit/contact-core';
+import type { Contact, ContactPay } from '@huishouden/pwa-kit/contact-core';
 import type { Bill, BillSettings, BillSource, BillSuggestion, BillSync } from './model';
 
 // Invented sample household for the signed-out app: README screenshots and first impressions.
@@ -13,6 +13,9 @@ const [SAM, ALEX] = DEMO_MEMBERS;
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
+/** A `contactPay` document: how the household pays one contact. */
+export type ContactPayRecord = { id: string; updatedAt?: number; by?: string } & ContactPay;
+
 export interface BillsData {
   bills: Bill[];
   sources: BillSource[];
@@ -23,6 +26,11 @@ export interface BillsData {
   answers: BillSuggestion[];
   /** The household's contacts (every app's), for who a bill is paid to. */
   contacts: Contact[];
+  /**
+   * Their pay details as written here (`contactPay`, admins and members only), by contact id. The
+   * live store's contacts already carry theirs; `payeeContacts` puts the two together.
+   */
+  contactPay: ContactPayRecord[];
   /** `billSettings/main`, once someone has saved it. */
   settings: (BillSettings & { id: string })[];
 }
@@ -152,12 +160,13 @@ export function demoData(): BillsData {
   });
   bills.push(rent('2031-05-08', { status: 'paid', paidAt: DEMO_NOW - 7 * DAY, paidBy: ALEX, paidVia: 'member' }), rent('2031-06-08', { createdAt: DEMO_NOW - 7 * DAY, createdBy: ALEX }));
   const contacts: Contact[] = [
-    { id: 'landlord', name: 'Example Rentals', role: 'Landlord', phone: '(555) 010-0123', email: 'rentals@example.com', pay: { zelle: 'rentals@example.com' }, apps: ['home', 'bills'], private: false, createdAt: DEMO_NOW - 90 * DAY, by: SAM },
+    { id: 'landlord', name: 'Example Rentals', role: 'Landlord', phone: '(555) 010-0123', email: 'rentals@example.com', apps: ['home', 'bills'], private: false, createdAt: DEMO_NOW - 90 * DAY, by: SAM },
     { id: 'plumber', name: 'Example Plumbing', role: 'Plumber', phone: '(555) 010-0188', apps: ['home'], private: false, createdAt: DEMO_NOW - 80 * DAY, by: ALEX },
   ];
   const syncs: BillSync[] = [{ id: SAM, checkedAt: DEMO_NOW - 2 * HOUR, by: SAM, sources: 5, emails: 9, bills: 1, errors: [] }];
   const answers: BillSuggestion[] = [{ id: 'hulu', status: 'added', name: 'Hulu', billId: 'manual-hulu', by: SAM, at: DEMO_NOW - 20 * DAY }];
-  return { bills, sources: DEMO_SOURCES.map((s) => ({ ...s })), syncs, charges: demoCharges(), answers, contacts, settings: [] };
+  const contactPay: ContactPayRecord[] = [{ id: 'landlord', zelle: 'rentals@example.com', updatedAt: DEMO_NOW - 60 * DAY, by: SAM }];
+  return { bills, sources: DEMO_SOURCES.map((s) => ({ ...s })), syncs, charges: demoCharges(), answers, contacts, contactPay, settings: [] };
 }
 
 const TODAY = '2031-05-14';
@@ -203,4 +212,19 @@ export function demoCharges(): CardCharge[] {
   ];
   for (const [ago, description, amount, category] of everyday) out.push({ date: addDays(TODAY, -ago), description, amount, category, type: amount < 0 ? 'Return' : 'Sale' });
   return out;
+}
+
+/**
+ * The contacts with the pay details written since they loaded laid over theirs, way by way: what
+ * the payee picker and "How to pay them" read.
+ */
+export function payeeContacts(data: Pick<BillsData, 'contacts' | 'contactPay'>): Contact[] {
+  if (!data.contactPay.length) return data.contacts;
+  const byId = new Map(data.contactPay.map((r) => [r.id, r]));
+  return data.contacts.map((c) => {
+    const r = byId.get(c.id);
+    if (!r) return c;
+    const { id: _id, updatedAt: _u, by: _b, ...pay } = r;
+    return { ...c, pay: { ...c.pay, ...pay } };
+  });
 }

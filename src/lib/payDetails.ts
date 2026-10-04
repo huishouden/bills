@@ -3,7 +3,8 @@ import type { PayMethod } from './model';
 
 // Filling in how a bill is paid from its payee: the Zelle phone or email, the Venmo @handle, the
 // mailing address for a check, the portal's link. What a bill saves is remembered on the contact
-// (kit `Contact.pay`) so the next bill to them fills in by itself.
+// (kit `Contact.pay`, kept in `contactPay` for admins and members only) so the next bill to them
+// fills in by itself.
 
 /** Where a suggested detail comes from. */
 export type DetailFrom = 'saved' | 'phone' | 'email' | 'address' | 'website';
