@@ -24,7 +24,7 @@ for (const [lang, messages] of [
     await expect(dialog.getByRole('button', { name: messages['billDialog.once'] })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
-    await expect(dialog.getByRole('button', { name: messages['form.on'], exact: true })).toBeVisible();
+    await expect(dialog.getByRole('group', { name: messages['form.autopay'] }).getByRole('button', { name: messages['form.on'], exact: true })).toBeVisible();
   });
 }
 

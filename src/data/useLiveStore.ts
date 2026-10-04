@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { commitOps } from '@huishouden/pwa-kit/firestore';
 import { applyOps } from '@huishouden/pwa-kit/store';
-import type { Bill, BillSource, BillSuggestion, BillSuggestionDoc, BillSync } from '../lib/model';
+import type { Bill, BillSettings, BillSource, BillSuggestion, BillSuggestionDoc, BillSync } from '../lib/model';
+import { watchContacts, type Contact } from '@huishouden/pwa-kit/contacts';
+import { localizeReminders, syncReminders } from '@huishouden/pwa-kit/reminders';
+import { billReminders } from '../lib/reminders';
+import type { PayContext } from '../lib/pay';
 import { spendingSince, toCharge } from '../lib/suggestions';
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { toYmd } from '@huishouden/pwa-kit/time';
@@ -25,12 +29,16 @@ const path = (key: DataKey) => COLLECTIONS[key];
  * The household's bills, sources and email-check status from Firestore. Writes are fire-and-forget:
  * the persistent cache applies them at once (also offline) and syncs later.
  */
-export function useLiveStore(householdId: string, me: string, members: string[], onError: (message: string) => void): BillsStore {
+export function useLiveStore(householdId: string, me: string, members: string[], payers: string[], onError: (message: string) => void): BillsStore {
   const [bills, setBills] = useState<Bill[]>([]);
   const [sources, setSources] = useState<BillSource[]>([]);
   const [syncs, setSyncs] = useState<BillSync[]>([]);
   const [charges, setCharges] = useState<CardCharge[]>([]);
   const [answers, setAnswers] = useState<BillSuggestion[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [settings, setSettings] = useState<(BillSettings & { id: string })[]>([]);
+  // Reminders wait for contacts and settings too, so a first sync never drops a payee or a default.
+  const [extrasLoaded, setExtrasLoaded] = useState({ contacts: false, settings: false });
   const [answered, setAnswered] = useState({ bills: false, sources: false });
   // The first bills snapshot from the server (not the offline cache): when the agenda is reconciled.
   const [billsFromServer, setBillsFromServer] = useState(false);
@@ -40,6 +48,10 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   sourcesRef.current = sources;
   const answersRef = useRef<BillSuggestion[]>([]);
   answersRef.current = answers;
+  const contactsRef = useRef<Contact[]>([]);
+  contactsRef.current = contacts;
+  const payRef = useRef<PayContext>({ sources, contacts });
+  payRef.current = { sources, contacts };
   const errorRef = useRef(onError);
   errorRef.current = onError;
   const base = `households/${householdId}`;
@@ -81,6 +93,32 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         (s) => setAnswers(s.docs.map((d) => ({ id: d.id, ...(d.data() as BillSuggestionDoc) }))),
         fail(t('live.loadSuggestions')),
       ),
+      // Every app's contacts: the landlord may have been added in Home.
+      watchContacts(
+        db,
+        householdId,
+        (c) => {
+          setContacts(c);
+          setExtrasLoaded((l) => ({ ...l, contacts: true }));
+        },
+        {
+          onError: (e) => {
+            setExtrasLoaded((l) => ({ ...l, contacts: true }));
+            fail(t('live.loadContacts'))(e);
+          },
+        },
+      ),
+      onSnapshot(
+        doc(db, base, 'billSettings', 'main'),
+        (d) => {
+          setSettings(d.exists() ? [{ id: d.id, ...(d.data() as BillSettings) }] : []);
+          setExtrasLoaded((l) => ({ ...l, settings: true }));
+        },
+        (e) => {
+          setExtrasLoaded((l) => ({ ...l, settings: true }));
+          fail(t('live.loadSettings'))(e);
+        },
+      ),
       // Card spending from Huishouden Spending, read only, for "Possible regular bills". A failure
       // here only hides the suggestions, so it is logged rather than shown.
       onSnapshot(
@@ -90,7 +128,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       ),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [base]);
+  }, [base, householdId]);
 
   // The household agenda follows every write. It is a copy for the portal: a failed agenda write
   // is logged, never shown, and the next open's reconcile repairs it.
@@ -102,16 +140,16 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         for (const id of new Set(ops.filter((o) => o.col === 'bills').map((o) => o.id))) {
           const bill = bills.find((b) => b.id === id);
           // Every language's words, so the portal shows each reader their own.
-          if (bill) void localizeAgenda(() => billAgenda(bill, bills, clock())).then((items) => replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), items, { by: me })).catch(warn);
+          if (bill) void localizeAgenda(() => billAgenda(bill, bills, clock(), undefined, payRef.current)).then((items) => replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), items, { by: me })).catch(warn);
           else void removeAgenda(db, householdId, AGENDA_APP, agendaRef(id)).catch(warn);
         }
       },
-      sync: (bills: Bill[]) => void localizeAgenda(() => agendaItems(bills, clock())).then((items) => syncAgenda(db, householdId, AGENDA_APP, items, { by: me })).catch(warn),
+      sync: (bills: Bill[]) => void localizeAgenda(() => agendaItems(bills, clock(), undefined, payRef.current)).then((items) => syncAgenda(db, householdId, AGENDA_APP, items, { by: me })).catch(warn),
       // The household's to-do list (bills to pay), written whole: on open and after every write here,
       // at once, so it is up to date even if the app is closed right after. Paid or skipped on the
       // portal, the item is removed there.
       todos: (bills: Bill[]) =>
-        void localizeTodos(() => todoItems(bills, clock()))
+        void localizeTodos(() => todoItems(bills, clock(), undefined, undefined, payRef.current))
           .then((items) => syncTodos(db, householdId, AGENDA_APP, items, { by: me }))
           .catch((e) => console.warn('To-do update failed', e)),
     };
@@ -134,7 +172,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
 
   const actions = useMemo(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, t('live.save'))));
-    const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current });
+    const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current, contacts: contactsRef.current, settings: [] });
     const backend: Backend = {
       newId: (key) => doc(collection(db, base, path(key))).id,
       write: (ops) => {
@@ -168,5 +206,41 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     [],
   );
 
-  return { data: { bills, sources, syncs, charges, answers }, ready: answered.bills && answered.sources, actions, mail, me, members, clock, sample: false };
+  // Reminders follow the bills: worked out from everything loaded, written when they change (a
+  // bill paid, skipped, removed or re-dated, a setting changed) and when the day turns. Paid and
+  // skipped bills have none, so their pending reminders are deleted here.
+  const day = toYmd(clock());
+  const remindersReady = billsFromServer && answered.sources && extrasLoaded.contacts && extrasLoaded.settings;
+  const lastReminders = useRef('');
+  useEffect(() => {
+    if (!remindersReady) return;
+    const id = setTimeout(() => {
+      const now = clock();
+      const build = () => billReminders(bills, { sources, contacts, settings: settings[0] ?? null, now });
+      const signature = JSON.stringify(build().map((r) => [r.id, r.title, r.body, r.recipients]));
+      if (signature === lastReminders.current) return;
+      lastReminders.current = signature;
+      localizeReminders(build)
+        .then((list) => syncReminders(db, householdId, AGENDA_APP, list, me, now))
+        .catch((e) => {
+          lastReminders.current = '';
+          console.warn('Reminder update failed', e);
+        });
+    }, 1500);
+    return () => clearTimeout(id);
+  }, [remindersReady, bills, sources, contacts, settings, householdId, me, day]);
+
+  const live = useMemo(() => ({ householdId, email: me }), [householdId, me]);
+  return {
+    data: { bills, sources, syncs, charges, answers, contacts, settings },
+    ready: answered.bills && answered.sources,
+    actions,
+    mail,
+    me,
+    members,
+    payers,
+    live,
+    clock,
+    sample: false,
+  };
 }

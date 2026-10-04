@@ -66,5 +66,62 @@ test('phone: upcoming', async ({ page }) => {
   });
 });
 
+// Rent, paid by Zelle by hand, with its own reminders: the prompt to turn notifications on, the
+// row that says who to pay, the bill opened from a notification, its reminders, and Settings.
+test('phone: reminders prompt', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-reminders', {
+    fixedTime,
+    prepare: (p) => expect(p.getByRole('region', { name: 'Get bill reminders here' })).toBeVisible(),
+  });
+});
+
+test('phone: rent, who to pay and how', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-rent-row', {
+    fixedTime,
+    prepare: async (p) => {
+      const rent = p.getByRole('listitem', { name: 'Rent' });
+      await rent.scrollIntoViewIfNeeded();
+      await p.evaluate(() => window.scrollBy(0, 220));
+      await expect(rent).toContainText('Zelle to Example Rentals');
+    },
+  });
+});
+
+test('phone: a bill opened from its notification', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-bill', {
+    path: './?bill=manual-rent~2031-06-08',
+    fixedTime,
+    prepare: (p) => expect(p.getByRole('dialog', { name: 'Rent' }).getByRole('region', { name: 'Reminders' })).toBeVisible(),
+  });
+});
+
+test("phone: a bill's payee, way to pay and reminders", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-bill-reminders', {
+    fixedTime,
+    prepare: async (p) => {
+      await p.getByRole('button', { name: 'Edit Rent' }).click();
+      const dialog = p.getByRole('dialog', { name: 'Edit bill' });
+      await dialog.getByRole('group', { name: 'When' }).scrollIntoViewIfNeeded();
+      await expect(dialog.getByRole('group', { name: 'When' })).toBeVisible();
+    },
+  });
+});
+
+test('phone: Bills settings', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-settings', {
+    fixedTime,
+    prepare: async (p) => {
+      await p.getByRole('button', { name: 'Settings' }).click();
+      await p.getByRole('button', { name: 'Bills settings' }).click();
+      await expect(p.getByRole('dialog', { name: 'Bills settings' }).getByRole('radio', { name: 'None' })).toBeChecked();
+    },
+  });
+});
+
 // What a helper or kid sees: no money, a way back to the portal.
 test('helper', ({ page }) => captureScreenshot(page, 'helper', { path: './?sample=helper' }));

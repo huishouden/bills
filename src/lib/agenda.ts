@@ -5,6 +5,7 @@ import { capitalize } from '@huishouden/pwa-kit/i18n';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import { t } from '../i18n';
 import type { Autopay, Bill } from './model';
+import { NO_PAY, payAction, payInfo, type PayContext } from './pay';
 import { viewBills, type BillView } from './view';
 
 /** This app's name on the household agenda. */
@@ -28,10 +29,12 @@ const autopayText = (a: Autopay | null) =>
  * Bills on autopay carry no status: nobody has to do anything, and a status would let the portal
  * call them overdue once the day passes.
  */
-function itemFor({ bill, state }: BillView, url: string): Item | null {
+function itemFor({ bill, state }: BillView, url: string, pay: PayContext): Item | null {
   if (!bill.due) return null;
   if (state !== 'overdue' && state !== 'attention' && state !== 'upcoming' && state !== 'autopay') return null;
-  const detail = [bill.amountDue ? formatMoney(bill.amountDue) : null, autopayText(bill.autopay)].filter(Boolean).join(', ');
+  // Who and how, for a bill someone pays by hand: "$1,850.00, autopay off, pay Example Rentals by Zelle".
+  const how = state === 'autopay' ? null : payAction(payInfo(bill, pay.sources, pay.contacts));
+  const detail = [bill.amountDue ? formatMoney(bill.amountDue) : null, autopayText(bill.autopay), how && how.charAt(0).toLocaleLowerCase() + how.slice(1)].filter(Boolean).join(', ');
   return {
     kind: 'bill',
     title: bill.label,
@@ -44,14 +47,14 @@ function itemFor({ bill, state }: BillView, url: string): Item | null {
 }
 
 /** A bill as it goes on the household agenda, for "Add to calendar" on its row; null when it isn't due. */
-export function billCalendarEntry(view: BillView, url = APP_URL): Item | null {
-  return itemFor(view, url);
+export function billCalendarEntry(view: BillView, url = APP_URL, pay: PayContext = NO_PAY): Item | null {
+  return itemFor(view, url, pay);
 }
 
 /** Everything Bills publishes, for `syncAgenda` (the kit keeps only the publishing window). */
-export function agendaItems(bills: Bill[], now: number, url = APP_URL): AgendaInput[] {
+export function agendaItems(bills: Bill[], now: number, url = APP_URL, pay: PayContext = NO_PAY): AgendaInput[] {
   return viewBills(bills, toYmd(now)).flatMap((v) => {
-    const item = itemFor(v, url);
+    const item = itemFor(v, url, pay);
     return item ? [{ ...item, ref: billRef(v.bill.id) }] : [];
   });
 }
@@ -60,9 +63,9 @@ export function agendaItems(bills: Bill[], now: number, url = APP_URL): AgendaIn
  * One bill's items, for `replaceAgenda` when it is saved: `bill` as written, read against the
  * household's other bills (a newer statement replaces an older one). Empty when it isn't due.
  */
-export function billAgenda(bill: Bill, bills: Bill[], now: number, url = APP_URL): Item[] {
+export function billAgenda(bill: Bill, bills: Bill[], now: number, url = APP_URL, pay: PayContext = NO_PAY): Item[] {
   const all = [...bills.filter((b) => b.id !== bill.id), bill];
   const view = viewBills(all, toYmd(now)).find((v) => v.bill.id === bill.id);
-  const item = view ? itemFor(view, url) : null;
+  const item = view ? itemFor(view, url, pay) : null;
   return item ? [item] : [];
 }

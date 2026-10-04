@@ -13,6 +13,9 @@ import type { Suggestions } from '../lib/suggestions';
 import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
 import { HORIZON_DAYS } from '../lib/view';
 import { useT } from '../i18n';
+import type { PayInfo } from '../lib/pay';
+import type { Plan } from '../lib/reminders';
+import { NotifyPrompt } from '../components/Notifications';
 
 interface Props {
   store: BillsStore;
@@ -27,6 +30,9 @@ interface Props {
   onMarkPaid: (bill: Bill) => void;
   onSkip: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
+  onOpen: (bill: Bill) => void;
+  pay: (bill: Bill) => PayInfo;
+  plan: (bill: Bill) => Plan | null;
   suggested: Suggestions;
   onAddSuggestion: (c: RecurringCandidate) => void;
   onDismissSuggestion: (c: RecurringCandidate) => void;
@@ -43,16 +49,21 @@ function Group({ title, children, count }: { title: string; children: ReactNode;
 }
 
 /** The next 30 days: overdue first, then this week, then the rest of the month. */
-export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onSkip, onRemove, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
+export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onSkip, onRemove, onOpen, pay, plan, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
   const t = useT();
   const u = upcoming(views);
   const h = headline(u);
   const { sources, syncs } = store.data;
-  const row = (v: BillView) => <BillRow key={v.bill.id} view={v} today={today} me={store.me} onMarkPaid={onMarkPaid} onSkip={onSkip} onEdit={onEdit} onRemove={onRemove} />;
+  const row = (v: BillView) => (
+    <BillRow key={v.bill.id} view={v} today={today} me={store.me} onMarkPaid={onMarkPaid} onSkip={onSkip} onEdit={onEdit} onRemove={onRemove} onOpen={onOpen} pay={pay(v.bill)} reminds={!!plan(v.bill)} />
+  );
+  // The first bill that reminds anyone, for the prompt to turn notifications on.
+  const reminding = [...u.overdue, ...u.week, ...u.later].find((v) => plan(v.bill));
   const empty = !sources.length && !views.length;
 
   return (
     <>
+      {reminding && <NotifyPrompt live={store.live} billName={reminding.bill.label} />}
       <div className={`${cardClass} p-5 sm:p-6`}>
         <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
           {/* basis-64: on a phone the headline takes the row and Add a bill wraps below it. */}

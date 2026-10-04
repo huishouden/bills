@@ -1,11 +1,12 @@
-import { Check, ExternalLink, Mail, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react';
+import { Bell, Check, ExternalLink, Mail, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { dueWords, shortDate } from '@huishouden/pwa-kit/time';
 import { kindLabel, type Bill } from '../lib/model';
 import { isOpen, type BillView } from '../lib/view';
 import { AutopayChip, KindIcon, personName } from './bits';
 import { t, useT } from '../i18n';
-import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
+import { CopyButton, iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
+import { methodLabel, payLine, type PayInfo } from '../lib/pay';
 import { AddToCalendar } from '@huishouden/pwa-kit/react/calendar';
 import { billCalendarEntry } from '../lib/agenda';
 
@@ -19,9 +20,18 @@ interface Props {
   onUnskip?: (bill: Bill) => void;
   onEdit?: (bill: Bill) => void;
   onRemove: (bill: Bill) => void;
+  /** Opens the bill's details (how to pay, reminders). */
+  onOpen?: (bill: Bill) => void;
+  /** Who it is paid to and how. */
+  pay?: PayInfo;
+  /** Whether it reminds anyone. */
+  reminds?: boolean;
 }
 
-function whenText(v: BillView, today: string): string {
+/** A small copy button that fits the row's second line. */
+const smallCopy = 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-stone-100 dark:hover:bg-forest-700';
+
+export function whenText(v: BillView, today: string): string {
   const { bill, state, days } = v;
   if (!bill.due) return t('row.noDueDate');
   if (state === 'overdue') return days === -1 ? t('row.overdueYesterday') : t('row.overdueBy', { days: -days! });
@@ -44,7 +54,7 @@ function historyText(v: BillView, today: string, me: string): string {
 }
 
 /** One bill: what, when, how much, whether autopay covers it, and the actions that fit. */
-export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onUnskip, onEdit, onRemove }: Props) {
+export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onUnskip, onEdit, onRemove, onOpen, pay, reminds }: Props) {
   const t = useT();
   const { bill, state } = view;
   const attention = state === 'overdue' || state === 'attention';
@@ -53,6 +63,8 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
   const skippable = open && !bill.autopay?.enrolled && !!onSkip;
   const removable = bill.source === 'manual' || (!skippable && state !== 'skipped');
   const calendar = open ? billCalendarEntry(view) : null;
+  const how = open && pay ? payLine(pay) : null;
+  const note = open ? pay?.payNote : undefined;
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
   const meta = [kindLabel(bill.kind), period, bill.source === 'manual' ? (bill.repeat ? t('row.addedByHandRepeats', { repeat: bill.repeat }) : t('row.addedByHand')) : t('row.fromEmail')]
     .filter(Boolean)
@@ -61,8 +73,21 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
     <li className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_10.5rem] lg:grid-cols-[2.75rem_minmax(0,1fr)_13rem_8rem_14.5rem] sm:flex-nowrap rounded-xl px-3 ${attention ? 'bg-attention-tint/40' : ''}`} aria-label={bill.label}>
       <KindIcon kind={bill.kind} attention={attention} />
       <div className="min-w-0 flex-1 basis-48 sm:basis-auto">
-        <p className="truncate text-lg font-semibold text-ink">{bill.label}</p>
+        {onOpen ? (
+          <button type="button" className="block max-w-full truncate text-left text-lg font-semibold text-ink hover:underline" onClick={() => onOpen(bill)} aria-label={t('row.open', { name: bill.label })}>
+            {bill.label}
+          </button>
+        ) : (
+          <p className="truncate text-lg font-semibold text-ink">{bill.label}</p>
+        )}
         <p className="truncate text-sm text-muted">{meta}</p>
+        {(how || note || (open && reminds)) && (
+          <div className="flex min-w-0 items-center gap-1.5 text-sm text-ink-soft">
+            {open && reminds && <Bell size={14} className="shrink-0 text-link" aria-label={t('row.reminds')} />}
+            <span className="min-w-0 truncate">{[how, note].filter(Boolean).join(' · ')}</span>
+            {note && <CopyButton text={note} what={pay?.payMethod ? t('detail.noteFor', { method: methodLabel(pay.payMethod) }) : t('detail.note')} className={smallCopy} />}
+          </div>
+        )}
       </div>
       <div className="w-full sm:w-auto">
         <p className={`text-base font-medium ${attention ? 'text-attention' : 'text-ink'}`}>{open ? whenText(view, today) : historyText(view, today, me)}</p>

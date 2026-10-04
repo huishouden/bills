@@ -11,10 +11,11 @@ export type { Money } from '@huishouden/pwa-kit/money';
 import type { Money } from '@huishouden/pwa-kit/money';
 import { t } from '../i18n';
 
-export const BILL_KINDS = ['electric', 'gas', 'water', 'internet', 'phone', 'mortgage', 'hoa', 'insurance', 'other'] as const;
+export const BILL_KINDS = ['rent', 'electric', 'gas', 'water', 'internet', 'phone', 'mortgage', 'hoa', 'insurance', 'other'] as const;
 export type BillKind = (typeof BILL_KINDS)[number];
 
 const KIND_KEYS = {
+  rent: 'kinds.rent',
   electric: 'kinds.electric',
   gas: 'kinds.gas',
   water: 'kinds.water',
@@ -30,6 +31,77 @@ const KIND_KEYS = {
 export const kindLabel = (kind: BillKind): string => t(KIND_KEYS[kind] ?? 'kinds.other');
 
 export type BillStatus = 'due' | 'paid' | 'credit' | 'unknown';
+
+/** How a bill is paid when nobody's autopay does it. `portal` is the provider's site (`payUrl`). */
+export const PAY_METHODS = ['zelle', 'venmo', 'bank', 'check', 'cash', 'card', 'portal'] as const;
+export type PayMethod = (typeof PAY_METHODS)[number];
+
+/**
+ * A bill's own reminders: off, or on with the days before its due date (0 the day itself) and
+ * whether to say so the day after when it is still unpaid. Days and overdue left out follow the
+ * household's (billSettings/main). No `remind` at all: the household's default decides.
+ */
+export interface BillReminder {
+  on: boolean;
+  days?: number[];
+  overdue?: boolean;
+}
+
+/** Days before the due date a reminder may be set for: up to 4 of 0-30. */
+export const REMIND_MAX_DAYS = 30;
+export const REMIND_MAX_COUNT = 4;
+
+/** Who and how: fields a bill and a bill source share (a source's apply to its email bills). */
+export interface PayFields {
+  /** The household contact it is paid to (the landlord). */
+  payeeContactId?: string;
+  payMethod?: PayMethod;
+  /** What paying needs: the Zelle email or phone, a memo line. */
+  payNote?: string;
+  /** The member who pays it (lowercase email); only they are reminded. */
+  payer?: string;
+  remind?: BillReminder;
+}
+
+/** Which bills remind without a setting of their own: none, those paid by hand (autopay off), or every one not on autopay. */
+export type RemindDefault = 'none' | 'manual' | 'all';
+
+/** `billSettings/main`: the household's bill reminders. */
+export interface BillSettings {
+  remindDefault: RemindDefault;
+  /** Days before the due date, 0 the day itself. */
+  remindDays: number[];
+  /** A reminder the day after the due date while unpaid. */
+  remindOverdue: boolean;
+  /** Where 9:00 is: the household's time zone (IANA), set from the device that saved it. */
+  timeZone?: string;
+  updatedAt?: number;
+  updatedBy?: string;
+}
+
+/** Until someone changes them: no bill reminds by itself; one turned on reminds 3 days before, on the day, and the day after. */
+export const DEFAULT_BILL_SETTINGS: BillSettings = { remindDefault: 'none', remindDays: [3, 0], remindOverdue: true };
+
+/** Up to 4 whole days of 0-30, without repeats, latest first. */
+export function cleanDays(days: readonly number[] | undefined): number[] {
+  return [...new Set((days ?? []).filter((d) => Number.isInteger(d) && d >= 0 && d <= REMIND_MAX_DAYS))].sort((a, b) => b - a).slice(0, REMIND_MAX_COUNT);
+}
+
+export function cleanReminder(r: BillReminder | null | undefined): BillReminder | undefined {
+  if (!r) return undefined;
+  return clean({ on: r.on === true, days: r.days ? cleanDays(r.days) : undefined, overdue: typeof r.overdue === 'boolean' ? r.overdue : undefined });
+}
+
+/** The pay fields as stored: trimmed, empty ones left out. */
+export function payFields(input: PayFields): PayFields {
+  return clean({
+    payeeContactId: trimmed(input.payeeContactId, 100),
+    payMethod: input.payMethod && (PAY_METHODS as readonly string[]).includes(input.payMethod) ? input.payMethod : undefined,
+    payNote: trimmed(input.payNote, 200),
+    payer: trimmed(input.payer?.toLowerCase(), 200),
+    remind: cleanReminder(input.remind),
+  });
+}
 export type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 export interface Autopay {
@@ -40,7 +112,7 @@ export interface Autopay {
 }
 
 /** `bills/{billId}`: one bill (one statement, or one manual entry). */
-export interface BillDoc {
+export interface BillDoc extends PayFields {
   schema: 'bill/v1';
   source: 'email' | 'manual';
   /** The bill source it was read from (email bills only). */
@@ -73,7 +145,7 @@ export interface Bill extends BillDoc {
 }
 
 /** `billSources/{sourceId}`: which emails are one provider's bills. Household data, never code. */
-export interface BillSourceDoc {
+export interface BillSourceDoc extends PayFields {
   name: string;
   kind: BillKind;
   /** A sender address or a whole domain. */
@@ -108,7 +180,7 @@ export interface BillSync extends BillSyncDoc {
   id: string;
 }
 
-export interface SourceInput {
+export interface SourceInput extends PayFields {
   name: string;
   kind: BillKind;
   from?: string;
@@ -118,7 +190,7 @@ export interface SourceInput {
   autopay: boolean | null;
 }
 
-export interface ManualBillInput {
+export interface ManualBillInput extends PayFields {
   label: string;
   kind: BillKind;
   due: Ymd | null;
@@ -164,6 +236,7 @@ export function sourceDoc(input: SourceInput, by: string, createdAt: number, now
     label: trimmed(input.label, 200),
     payUrl: input.payUrl?.trim().startsWith('https://') ? input.payUrl.trim().slice(0, 500) : undefined,
     autopay: input.autopay,
+    ...payFields(input),
     createdAt,
     createdBy: by,
     updatedAt: now,
@@ -191,6 +264,7 @@ export function manualBillDoc(input: ManualBillInput, by: string, createdAt: num
     autopay: input.autopay === null ? null : input.autopay && (input.autopayVia ?? keep?.autopay?.via) ? { enrolled: true, via: 'card' as const } : { enrolled: input.autopay },
     payUrl: input.payUrl?.trim().startsWith('https://') ? input.payUrl.trim().slice(0, 500) : undefined,
     repeat: input.repeat ?? undefined,
+    ...payFields(input),
     paidAt: keep?.paidAt,
     paidBy: keep?.paidBy,
     paidVia: keep?.paidVia,
