@@ -45,18 +45,19 @@ describe('the sample household', () => {
   test('groups: overdue water, this week fiber and power, later the rest', () => {
     expect(u.overdue.map((v) => v.bill.label)).toEqual(['Example Water District']);
     expect(u.week.map((v) => v.bill.label)).toEqual(['Example Fiber', 'Example Power Co']);
-    expect(u.later.map((v) => v.bill.label)).toEqual(['Hulu', 'Example Commons HOA', 'Example Home Loans', 'Example Mutual']);
+    expect(u.later.map((v) => v.bill.label)).toEqual(['Hulu', 'Example Commons HOA', 'Example Home Loans', 'Rent', 'Example Mutual']);
   });
 
   test('headline counts bills, overdue and those without autopay', () => {
     const h = headline(u);
-    expect(h.text).toBe('7 bills in the next 30 days; 1 overdue; 4 without autopay');
-    expect(h.total).toEqual({ amount: '3207.99', currency: 'USD' });
+    expect(h.text).toBe('8 bills in the next 30 days; 1 overdue; 5 without autopay');
+    expect(h.total).toEqual({ amount: '5057.99', currency: 'USD' });
   });
 
   test('history holds paid, presumed-drafted and skipped bills, newest first', () => {
     expect(history(views, TODAY).map((v) => `${v.bill.label} ${v.state}`)).toEqual([
       'Example Window Cleaning skipped',
+      'Rent paid',
       'Example Home Loans autopaid',
       'Example Power Co paid',
       'Example Fiber autopaid',

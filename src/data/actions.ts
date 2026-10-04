@@ -1,7 +1,9 @@
 import { changes, withoutId, type Backend as KitBackend, type Op as KitOp } from '@huishouden/pwa-kit/store';
 import { track } from '@huishouden/pwa-kit/observability';
 import type { BillsData } from '../lib/demo';
-import { manualBillDoc, sourceDoc, type BillSuggestionDoc } from '../lib/model';
+import { cleanContact } from '@huishouden/pwa-kit/contact-core';
+import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSuggestionDoc } from '../lib/model';
+import { deviceTimeZone } from '../lib/reminders';
 import { suggestionId } from '../lib/suggestions';
 import { nextId, nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions } from './types';
@@ -16,6 +18,8 @@ export const COLLECTIONS = {
   sources: 'billSources',
   syncs: 'billSync',
   answers: 'billSuggestions',
+  contacts: 'contacts',
+  settings: 'billSettings',
 } as const satisfies Partial<Record<keyof BillsData, string>>;
 export type DataKey = keyof typeof COLLECTIONS;
 
@@ -88,6 +92,25 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
     dismissSuggestion: (candidate, name) => {
       track('dismiss suggested bill');
       return change([{ col: 'answers', id: suggestionId(candidate.merchantKey), data: { status: 'dismissed', name: name.slice(0, 80), by: me, at: clock() } satisfies BillSuggestionDoc }]);
+    },
+    saveContact: (id, input) => {
+      const now = clock();
+      const existing = id ? read().contacts.find((c) => c.id === id) : undefined;
+      const newId = id ?? backend.newId('contacts');
+      backend.write([{ col: 'contacts', id: newId, data: { ...cleanContact(input), createdAt: existing?.createdAt ?? now, ...(existing ? { updatedAt: now } : {}), by: me } }]);
+      return newId;
+    },
+    saveSettings: (input) => {
+      track('save bill settings');
+      const data: BillSettings = {
+        remindDefault: input.remindDefault,
+        remindDays: cleanDays(input.remindDays),
+        remindOverdue: input.remindOverdue,
+        timeZone: input.timeZone || deviceTimeZone(),
+        updatedAt: clock(),
+        updatedBy: me,
+      };
+      backend.write([{ col: 'settings', id: 'main', data }]);
     },
     applySync: (result) => {
       track('check email');

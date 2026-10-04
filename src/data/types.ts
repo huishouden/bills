@@ -1,7 +1,8 @@
 import type { BillsData } from '../lib/demo';
 import type { Mailbox, SyncResult } from '../lib/emailSync';
 import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
-import type { Bill, BillSource, ManualBillInput, SourceInput } from '../lib/model';
+import type { ContactInput } from '@huishouden/pwa-kit/contact-core';
+import type { Bill, BillSettings, BillSource, ManualBillInput, SourceInput } from '../lib/model';
 
 export type { BillsData };
 
@@ -27,6 +28,10 @@ export interface BillsActions {
   addSuggestion(candidate: RecurringCandidate, input: ManualBillInput): () => void;
   /** "Not a bill": never suggested again. Returns the undo. */
   dismissSuggestion(candidate: RecurringCandidate, name: string): () => void;
+  /** Adds or changes a household contact (who a bill is paid to); returns its id. */
+  saveContact(id: string | null, input: ContactInput): string;
+  /** The household's bill reminders; the time zone defaults to this device's. */
+  saveSettings(input: Pick<BillSettings, 'remindDefault' | 'remindDays' | 'remindOverdue'> & { timeZone?: string }): void;
 }
 
 /** Where email comes from: the member's Gmail, or the sample mailbox. */
@@ -47,6 +52,10 @@ export interface BillsStore {
   /** The signed-in member's email (or the sample's). */
   me: string;
   members: string[];
+  /** Members who may pay bills (admins and members): the "Who pays" choices. */
+  payers: string[];
+  /** Signed in: the household and member, for this device's notifications. */
+  live?: { householdId: string; email: string };
   /** Time for writes: the sample runs on its own 2031 clock. */
   clock: () => number;
   /** Signed out: invented data, nothing saved. */

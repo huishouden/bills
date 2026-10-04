@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
-import { BILL_KINDS, kindLabel, sourceProblem, type BillKind, type BillSource, type SourceInput } from '../lib/model';
+import type { Contact, ContactInput } from '@huishouden/pwa-kit/contact-core';
+import { BILL_KINDS, kindLabel, sourceProblem, type BillKind, type BillSettings, type BillSource, type SourceInput } from '../lib/model';
+import { PaySection } from './PaySection';
 import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
 
@@ -11,10 +13,15 @@ interface Props {
   onClose: () => void;
   onSave: (input: SourceInput) => void;
   onDelete?: () => void;
+  contacts: readonly Contact[];
+  payers: readonly string[];
+  me: string;
+  settings: BillSettings | null;
+  onSaveContact: (input: ContactInput) => string;
 }
 
 /** Which emails are one provider's bills: a sender, subject words, or a Gmail label. */
-export function SourceDialog({ source, onClose, onSave, onDelete }: Props) {
+export function SourceDialog({ source, onClose, onSave, onDelete, contacts, payers, me, settings, onSaveContact }: Props) {
   const t = useT();
   const [input, setInput] = useState<SourceInput>({
     name: source?.name ?? '',
@@ -24,6 +31,11 @@ export function SourceDialog({ source, onClose, onSave, onDelete }: Props) {
     label: source?.label ?? '',
     payUrl: source?.payUrl ?? '',
     autopay: source?.autopay ?? null,
+    payeeContactId: source?.payeeContactId,
+    payMethod: source?.payMethod,
+    payNote: source?.payNote,
+    payer: source?.payer,
+    remind: source?.remind,
   });
   const [problem, setProblem] = useState<string | null>(null);
   const set = (patch: Partial<SourceInput>) => setInput((i) => ({ ...i, ...patch }));
@@ -101,6 +113,7 @@ export function SourceDialog({ source, onClose, onSave, onDelete }: Props) {
         <Field label={t('form.payLink')}>
           <input className={inputClass} type="url" value={input.payUrl} onChange={(e) => set({ payUrl: e.target.value })} placeholder={URL_PLACEHOLDER} />
         </Field>
+        <PaySection value={input} onChange={set} contacts={contacts} payers={payers} me={me} settings={settings} autopay={input.autopay === true} onSaveContact={onSaveContact} />
         {problem && (
           <p role="alert" className="text-base text-error">
             {problem}

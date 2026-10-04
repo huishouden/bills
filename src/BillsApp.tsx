@@ -1,5 +1,5 @@
 import { CalendarClock, History as HistoryIcon, Mail } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { useClock } from '@huishouden/pwa-kit/react/clock';
 import { Header, type Tab } from './components/Header';
@@ -18,6 +18,11 @@ import { History } from './screens/History';
 import { Sources } from './screens/Sources';
 import { Upcoming } from './screens/Upcoming';
 import { useT } from './i18n';
+import { BillDetail } from './components/BillDetail';
+import { SettingsDialog } from './components/SettingsDialog';
+import { payInfo } from './lib/pay';
+import { remindPlan, type Plan } from './lib/reminders';
+import { DEFAULT_BILL_SETTINGS } from './lib/model';
 
 type TabId = 'upcoming' | 'history' | 'sources';
 
@@ -50,15 +55,34 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   const [billDialog, setBillDialog] = useState<Bill | 'new' | null>(null);
   const [sourceDialog, setSourceDialog] = useState<BillSource | 'new' | null>(null);
   const [finding, setFinding] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // A bill opened from its row or a notification (`?bill=<id>`).
+  const [detailId, setDetailId] = useState<string | null>(() => new URLSearchParams(globalThis.location?.search ?? '').get('bill'));
   const email = useEmailCheck(store);
   const views = useMemo(() => viewBills(store.data.bills, today), [store.data.bills, today]);
   const { actions } = store;
-  const { charges, bills, sources, answers } = store.data;
+  const { charges, bills, sources, answers, contacts } = store.data;
+  const settings = store.data.settings[0] ?? null;
+  const pay = useCallback((bill: Bill) => payInfo(bill, sources, contacts), [sources, contacts]);
+  const plan = useCallback((bill: Bill): Plan | null => remindPlan(bill, pay(bill).remind, settings ?? DEFAULT_BILL_SETTINGS), [pay, settings]);
   const suggested = useMemo(() => suggestions(charges, today, bills, sources, answers), [charges, today, bills, sources, answers]);
 
   useEffect(() => {
     document.title = t('app.documentTitle');
   }, [t]);
+
+  // A notification's link opens the bill once; the address goes back to the app's own.
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (!url.searchParams.has('bill')) return;
+    url.searchParams.delete('bill');
+    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+  }, []);
+  const detail = detailId && store.ready ? views.find((v) => v.bill.id === detailId) : undefined;
+  const editSource = (bill: Bill) => {
+    const source = sources.find((x) => x.id === bill.sourceId);
+    if (source) setSourceDialog(source);
+  };
 
   const find = () => {
     setFinding(true);
@@ -108,6 +132,9 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
         onMarkPaid={markPaid}
         onSkip={skip}
         onRemove={remove}
+        onOpen={(bill) => setDetailId(bill.id)}
+        pay={pay}
+        plan={plan}
         suggested={suggested}
         onAddSuggestion={addSuggestion}
         onDismissSuggestion={dismissSuggestion}
@@ -116,7 +143,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
 
   return (
     <div className="flex min-h-dvh flex-col bg-page font-sans text-ink antialiased">
-      <Header tabs={tabs} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} />
+      <Header tabs={tabs} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} onSettings={() => setSettingsOpen(true)} />
       <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-4 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-6">
         {banner}
         {content}
@@ -132,6 +159,11 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
             if (billDialog === 'new') notify(t('toast.added', { name: input.label.trim() }));
           }}
           onDelete={billDialog === 'new' ? undefined : () => remove(billDialog)}
+          contacts={contacts}
+          payers={store.payers}
+          me={store.me}
+          settings={settings}
+          onSaveContact={(input) => actions.saveContact(null, input)}
         />
       )}
       {sourceDialog && (
@@ -147,6 +179,11 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
               ? undefined
               : () => notify(t('toast.sourceDeleted', { name: sourceDialog.name }), actions.deleteSource(sourceDialog))
           }
+          contacts={contacts}
+          payers={store.payers}
+          me={store.me}
+          settings={settings}
+          onSaveContact={(input) => actions.saveContact(null, input)}
         />
       )}
       {finding && (
@@ -161,6 +198,33 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
           }}
         />
       )}
+      {detail && (
+        <BillDetail
+          view={detail}
+          today={today}
+          me={store.me}
+          info={pay(detail.bill)}
+          plan={plan(detail.bill)}
+          onClose={() => setDetailId(null)}
+          onMarkPaid={markPaid}
+          onSkip={skip}
+          onEdit={
+            detail.bill.source === 'manual'
+              ? () => {
+                  setDetailId(null);
+                  setBillDialog(detail.bill);
+                }
+              : detail.bill.sourceId && sources.some((x) => x.id === detail.bill.sourceId)
+                ? () => {
+                    setDetailId(null);
+                    editSource(detail.bill);
+                  }
+                : undefined
+          }
+          editLabel={detail.bill.source === 'manual' ? undefined : t('detail.editSource')}
+        />
+      )}
+      {settingsOpen && <SettingsDialog settings={settings} live={store.live} onSave={actions.saveSettings} onClose={() => setSettingsOpen(false)} />}
       <Toast toast={toast} onDone={clearToast} />
     </div>
   );
