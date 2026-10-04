@@ -18,7 +18,7 @@ test('groups bills and calls out the ones autopay will not pay', async ({ page }
   const week = section(page, 'This week');
   await expect(week.getByRole('listitem', { name: 'Example Power Co' })).toContainText('Autopay off');
   await expect(week.getByRole('listitem', { name: 'Example Fiber' })).toContainText('Autopay on');
-  await expect(section(page, 'Later this month').getByRole('listitem')).toHaveCount(4);
+  await expect(section(page, 'Later this month').getByRole('listitem')).toHaveCount(5);
 });
 
 test('mark paid moves a bill to history, and Undo brings it back', async ({ page }) => {
@@ -131,4 +131,81 @@ test('possible regular bills from card spending: Add and Not a bill, each with U
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(card.getByRole('listitem', { name: 'Spotify' })).toBeVisible();
   await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
+});
+
+test('rent says who to pay and how, copies the Zelle email, and opens its details', async ({ page }) => {
+  await open(page);
+  const rent = section(page, 'Later this month').getByRole('listitem', { name: 'Rent' });
+  await expect(rent).toContainText('Zelle to Example Rentals · rentals@example.com');
+  await expect(rent.getByLabel('Reminders on')).toBeVisible();
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await rent.getByRole('button', { name: 'Copy the Zelle details' }).click();
+  await expect(rent.getByRole('button', { name: 'Copied' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('rentals@example.com');
+
+  await rent.getByRole('button', { name: 'Open Rent' }).click();
+  const detail = page.getByRole('dialog', { name: 'Rent' });
+  await expect(detail.getByRole('region', { name: 'How to pay' })).toContainText('Zelle to Example Rentals');
+  await expect(detail.getByRole('link', { name: '(555) 010-0123' })).toHaveAttribute('href', /^tel:/);
+  await expect(detail.getByRole('region', { name: 'Reminders' })).toContainText('3 days before, on the due day, and the day after if unpaid, at 9:00');
+  await detail.getByRole('button', { name: 'Mark paid' }).click();
+  await expect(page.getByText('Marked Rent paid')).toBeVisible();
+  // The next month's rent is added, still paid to the landlord by Zelle.
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(rent).toBeVisible();
+});
+
+test("a notification's link opens the bill", async ({ page }) => {
+  await page.clock.setFixedTime(fixedTime);
+  await page.goto('./?bill=manual-rent~2031-06-08');
+  const detail = page.getByRole('dialog', { name: 'Rent' });
+  await expect(detail).toBeVisible();
+  await expect(detail.getByRole('button', { name: 'Mark paid' })).toBeVisible();
+  await expect(page).toHaveURL(/\/bills\/$/);
+});
+
+test("reminders are off unless turned on: a bill's own, and the household default in Settings", async ({ page }) => {
+  await open(page);
+  const power = section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' });
+  await expect(power.getByLabel('Reminders on')).toHaveCount(0);
+
+  // Rent's own reminders off: no bell, no prompt to turn notifications on.
+  await page.getByRole('button', { name: 'Edit Rent' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit bill' });
+  await dialog.getByRole('group', { name: 'Reminders' }).getByRole('button', { name: 'Off', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(section(page, 'Later this month').getByRole('listitem', { name: 'Rent' }).getByLabel('Reminders on')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Get bill reminders here' })).toHaveCount(0);
+
+  // The household reminds every bill paid by hand: Power Co (autopay off) now does; Fiber (autopay) doesn't.
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Bills settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Bills settings' });
+  await expect(settings.getByRole('region', { name: 'Notifications on this device' })).toBeVisible();
+  await expect(settings.getByRole('checkbox', { name: 'Mute bill reminders for me' })).toBeVisible();
+  await expect(settings.getByRole('radio', { name: 'None' })).toBeChecked();
+  await settings.getByRole('radio', { name: 'Unpaid bills we pay by hand' }).check();
+  await settings.getByRole('button', { name: '1 day before' }).click();
+  await settings.getByRole('button', { name: 'Save' }).click();
+  await expect(power.getByLabel('Reminders on')).toBeVisible();
+  await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Fiber' }).getByLabel('Reminders on')).toHaveCount(0);
+  await expect(section(page, 'Later this month').getByRole('listitem', { name: 'Rent' }).getByLabel('Reminders on')).toHaveCount(0);
+  await power.getByRole('button', { name: 'Open Example Power Co' }).click();
+  await expect(page.getByRole('dialog', { name: 'Example Power Co' }).getByRole('region', { name: 'Reminders' })).toContainText('3 days before, 1 day before, on the due day, and the day after if unpaid');
+});
+
+test('a new contact from the bill dialog becomes who it is paid to', async ({ page }) => {
+  await open(page);
+  await page.getByRole('button', { name: 'Add a bill' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Add a bill' });
+  await dialog.getByLabel('Name').first().fill('Lawn care');
+  await dialog.getByRole('button', { name: 'New contact' }).click();
+  const contact = page.getByRole('dialog', { name: 'New contact' });
+  await contact.getByLabel('Name', { exact: true }).fill('Example Lawns');
+  await contact.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog.getByLabel('Pay to')).toHaveValue(/.+/);
+  await dialog.getByRole('group', { name: 'How to pay' }).getByRole('button', { name: 'Venmo' }).click();
+  await dialog.getByLabel('Payment details (optional)').fill('@example-lawns');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('listitem', { name: 'Lawn care' })).toContainText('Venmo to Example Lawns · @example-lawns');
 });

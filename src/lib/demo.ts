@@ -1,6 +1,7 @@
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { addDays, addMonths } from '@huishouden/pwa-kit/time';
-import type { Bill, BillSource, BillSuggestion, BillSync } from './model';
+import type { Contact } from '@huishouden/pwa-kit/contact-core';
+import type { Bill, BillSettings, BillSource, BillSuggestion, BillSync } from './model';
 
 // Invented sample household for the signed-out app: README screenshots and first impressions.
 // Every date is relative to one fixed day in 2031, every sender is on example.com.
@@ -20,6 +21,10 @@ export interface BillsData {
   charges: CardCharge[];
   /** Members' answers to suggested bills. */
   answers: BillSuggestion[];
+  /** The household's contacts (every app's), for who a bill is paid to. */
+  contacts: Contact[];
+  /** `billSettings/main`, once someone has saved it. */
+  settings: (BillSettings & { id: string })[];
 }
 
 const source = (id: string, s: Omit<BillSource, 'id' | 'createdAt' | 'createdBy' | 'updatedAt'>): BillSource => ({
@@ -124,9 +129,35 @@ export function demoData(): BillsData {
     createdBy: SAM,
     updatedAt: DEMO_NOW - 20 * DAY,
   });
+  // Rent, paid by Zelle by hand by the 8th, with reminders turned on for it alone.
+  const rent = (due: string, extra: Partial<Bill> = {}): Bill => ({
+    id: due === '2031-05-08' ? 'manual-rent' : `manual-rent~${due}`,
+    schema: 'bill/v1',
+    source: 'manual',
+    kind: 'rent',
+    label: 'Rent',
+    due,
+    amountDue: usd('1850.00'),
+    status: 'due',
+    autopay: { enrolled: false },
+    repeat: 'monthly',
+    payeeContactId: 'landlord',
+    payMethod: 'zelle',
+    payNote: 'rentals@example.com',
+    remind: { on: true, days: [3, 0], overdue: true },
+    createdAt: DEMO_NOW - 70 * DAY,
+    createdBy: SAM,
+    updatedAt: DEMO_NOW - 70 * DAY,
+    ...extra,
+  });
+  bills.push(rent('2031-05-08', { status: 'paid', paidAt: DEMO_NOW - 7 * DAY, paidBy: ALEX, paidVia: 'member' }), rent('2031-06-08', { createdAt: DEMO_NOW - 7 * DAY, createdBy: ALEX }));
+  const contacts: Contact[] = [
+    { id: 'landlord', name: 'Example Rentals', role: 'Landlord', phone: '(555) 010-0123', email: 'rentals@example.com', apps: ['home', 'bills'], private: false, createdAt: DEMO_NOW - 90 * DAY, by: SAM },
+    { id: 'plumber', name: 'Example Plumbing', role: 'Plumber', phone: '(555) 010-0188', apps: ['home'], private: false, createdAt: DEMO_NOW - 80 * DAY, by: ALEX },
+  ];
   const syncs: BillSync[] = [{ id: SAM, checkedAt: DEMO_NOW - 2 * HOUR, by: SAM, sources: 5, emails: 9, bills: 1, errors: [] }];
   const answers: BillSuggestion[] = [{ id: 'hulu', status: 'added', name: 'Hulu', billId: 'manual-hulu', by: SAM, at: DEMO_NOW - 20 * DAY }];
-  return { bills, sources: DEMO_SOURCES.map((s) => ({ ...s })), syncs, charges: demoCharges(), answers };
+  return { bills, sources: DEMO_SOURCES.map((s) => ({ ...s })), syncs, charges: demoCharges(), answers, contacts, settings: [] };
 }
 
 const TODAY = '2031-05-14';

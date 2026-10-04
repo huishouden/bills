@@ -26,6 +26,8 @@ export default defineConfig({
       themeColor: '#1b4332',
       backgroundColor: '#faf9f5',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      // Bill reminders as notifications from the shared sender (huishouden/notify).
+      push: true,
       overrides: {
         manifest: { categories: ['finance', 'lifestyle', 'productivity'] },
         workbox: {

@@ -72,7 +72,7 @@ function SignedIn({ user, ...frame }: FrameProps & { user: User }) {
 
   // Helpers and kids never see the household's bills (the rules refuse every read): no listeners, syncs or email checks.
   if (state.status === 'ready' && !seesMoney(state.household, email)) return <MoneyRefusal user={user} {...frame} />;
-  if (state.status === 'ready') return <LiveApp householdId={state.household.id} members={state.household.members} user={user} {...frame} />;
+  if (state.status === 'ready') return <LiveApp householdId={state.household.id} members={state.household.members} payers={state.household.members.filter((m) => seesMoney(state.household, m))} user={user} {...frame} />;
   if (state.status === 'loading') return <Plain user={user} {...frame}>{t('household.finding')}</Plain>;
   if (state.status === 'error')
     return (
@@ -91,9 +91,9 @@ function SignedIn({ user, ...frame }: FrameProps & { user: User }) {
   );
 }
 
-function LiveApp({ householdId, members, user, ...frame }: FrameProps & { householdId: string; members: string[]; user: User }) {
+function LiveApp({ householdId, members, payers, user, ...frame }: FrameProps & { householdId: string; members: string[]; payers: string[]; user: User }) {
   const { toast, notify, fail, clear } = useToast();
-  const store = useLiveStore(householdId, (user.email ?? '').toLowerCase(), members, fail);
+  const store = useLiveStore(householdId, (user.email ?? '').toLowerCase(), members, payers, fail);
   const read = useCallback(() => Date.now(), []);
   return (
     <ClockProvider read={read}>

@@ -33,6 +33,7 @@ describe('agendaItems for the sample household', () => {
       'Example Power Co upcoming',
       'Example Water District overdue',
       'Hulu autopay',
+      'Rent upcoming',
     ]);
   });
 
@@ -116,5 +117,13 @@ describe('Add to calendar on a bill row', () => {
       else expect(entry).toBeNull();
     }
     expect(published.every((i) => i.edit === undefined)).toBe(true);
+  });
+
+  test('a bill paid by hand says who to pay and how; autopay ones do not', () => {
+    const data = demoData();
+    const pay = { sources: data.sources, contacts: data.contacts };
+    const items = agendaItems(data.bills, NOW, undefined, pay);
+    expect(items.find((i) => i.title === 'Rent')!.detail).toBe('$1,850.00, autopay off, pay Example Rentals by Zelle');
+    expect(items.find((i) => i.title === 'Hulu')!.detail).toBe('$17.99, autopay by card');
   });
 });

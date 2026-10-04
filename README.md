@@ -15,11 +15,54 @@ Live at https://huishouden-piekstra.web.app/bills/; the old address, huishouden-
 |---|---|
 | ![Regular card charges offered as bills, with Add and Not a bill](docs/screenshots/suggested-bills.png) | |
 
+| Reminders | Rent: who to pay and how |
+|---|---|
+| ![A prompt to turn on notifications because Rent has reminders](docs/screenshots/phone-reminders.png) | ![Rent's row: Zelle to Example Rentals, with a copy button and a bell](docs/screenshots/phone-rent-row.png) |
+
+| A bill opened from its notification | A bill's payee, way to pay and reminders |
+|---|---|
+| ![Rent with how to pay, the landlord's phone and email, its reminders and Mark paid](docs/screenshots/phone-bill.png) | ![Edit bill: Zelle, payment details, who pays, reminders 3 days before and on the due day](docs/screenshots/phone-bill-reminders.png) |
+
+| Bills settings | |
+|---|---|
+| ![Notifications on this device, mute for me, and the household's reminder default](docs/screenshots/phone-settings.png) | |
+
 | History | Phone |
 |---|---|
 | ![Paid, autopaid and replaced bills](docs/screenshots/history.png) | ![Upcoming on a phone](docs/screenshots/phone-upcoming.png) |
 
 _These are screenshots of the live site while signed out. Signed out, it shows an invented household dated in 2031. CI refreshes them after each deploy._
+
+## Paying and reminders
+
+Each bill (or, for email bills, its bill source) can say how it is paid:
+
+- **Pay to**: one of the household's contacts, from any app (the landlord added in Home), or a new
+  one. Its phone and email show on the bill, each with a copy button.
+- **How to pay**: Zelle, Venmo, bank transfer, check, cash, card or the online portal (the pay
+  link), with payment details such as the Zelle email, shown with a copy button. The row reads
+  "Zelle to Example Rentals".
+- **Who pays**: one admin or member, or anyone.
+
+A repeating bill's next one keeps all of this. The portal's To-do list and the household agenda
+say "Pay Example Rentals by Zelle"; both stay private to admins and members.
+
+Reminders are off unless someone turns them on:
+
+- **Household default** (Bills settings): none (the default), unpaid bills paid by hand (autopay
+  off), or all unpaid bills. Bills on autopay never remind by default.
+- **Per bill**: the household default, off, or on, with up to 4 days before the due date (7, 3,
+  1, the day itself) and the day after if still unpaid. An autopay bill turned on reminds before
+  its draft date and never as overdue.
+- Reminders go out at 9:00 in the household's time zone (saved with the settings) through the
+  suite's notification sender (huishouden/notify): to the member who pays the bill, or else to
+  every admin and member. Helpers and kids never get them.
+- Tapping a reminder opens the bill, with **Mark paid**. Paying, skipping or removing a bill in
+  Bills cancels its pending reminders. One paid or skipped from the portal's To-do list
+  has them cancelled the next time Bills opens on any device.
+- **Notifications on this device** in Bills settings turns them on per phone or tablet. The
+  first time a bill has reminders, Upcoming offers it too. **Mute bill reminders for me** stops
+  them for one member on all their devices, without changing the household's setting.
 
 ## How email checks work
 
