@@ -102,6 +102,8 @@ export function useLiveStore(householdId: string, me: string, members: string[],
           setExtrasLoaded((l) => ({ ...l, contacts: true }));
         },
         {
+          // Bills is for admins and members only, so contacts carry their pay details (contactPay).
+          by: me,
           onError: (e) => {
             setExtrasLoaded((l) => ({ ...l, contacts: true }));
             fail(t('live.loadContacts'))(e);
@@ -128,7 +130,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       ),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [base, householdId]);
+  }, [base, householdId, me]);
 
   // The household agenda follows every write. It is a copy for the portal: a failed agenda write
   // is logged, never shown, and the next open's reconcile repairs it.
@@ -172,7 +174,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
 
   const actions = useMemo(() => {
     const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, t('live.save'))));
-    const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current, contacts: contactsRef.current, settings: [] });
+    const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current, contacts: contactsRef.current, contactPay: [], settings: [] });
     const backend: Backend = {
       newId: (key) => doc(collection(db, base, path(key))).id,
       write: (ops) => {
@@ -232,7 +234,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
 
   const live = useMemo(() => ({ householdId, email: me }), [householdId, me]);
   return {
-    data: { bills, sources, syncs, charges, answers, contacts, settings },
+    data: { bills, sources, syncs, charges, answers, contacts, contactPay: [], settings },
     ready: answered.bills && answered.sources,
     actions,
     mail,
