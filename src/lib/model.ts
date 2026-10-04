@@ -10,6 +10,7 @@ export type Ymd = string;
 export type { Money } from '@huishouden/pwa-kit/money';
 import type { Money } from '@huishouden/pwa-kit/money';
 import { t } from '../i18n';
+import { venmoHandle } from './payDetails';
 
 export const BILL_KINDS = ['rent', 'electric', 'gas', 'water', 'internet', 'phone', 'mortgage', 'hoa', 'insurance', 'other'] as const;
 export type BillKind = (typeof BILL_KINDS)[number];
@@ -97,7 +98,7 @@ export function payFields(input: PayFields): PayFields {
   return clean({
     payeeContactId: trimmed(input.payeeContactId, 100),
     payMethod: input.payMethod && (PAY_METHODS as readonly string[]).includes(input.payMethod) ? input.payMethod : undefined,
-    payNote: trimmed(input.payNote, 200),
+    payNote: trimmed(input.payMethod === 'venmo' && input.payNote ? venmoHandle(input.payNote) : input.payNote, 200),
     payer: trimmed(input.payer?.toLowerCase(), 200),
     remind: cleanReminder(input.remind),
   });

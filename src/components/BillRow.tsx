@@ -65,6 +65,8 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
   const calendar = open ? billCalendarEntry(view) : null;
   const how = open && pay ? payLine(pay) : null;
   const note = open ? pay?.payNote : undefined;
+  // Its own link, else its bill source's.
+  const payUrl = pay?.payUrl ?? bill.payUrl;
   const period = bill.period ? `${shortDate(bill.period.start, today)} – ${shortDate(bill.period.end, today)}` : null;
   const meta = [kindLabel(bill.kind), period, bill.source === 'manual' ? (bill.repeat ? t('row.addedByHandRepeats', { repeat: bill.repeat }) : t('row.addedByHand')) : t('row.fromEmail')]
     .filter(Boolean)
@@ -116,9 +118,11 @@ export function BillRow({ view, today, me, onMarkPaid, onMarkUnpaid, onSkip, onU
             <RotateCcw size={18} />
           </button>
         )}
-        {bill.payUrl && open && (
-          <a className={iconButton} href={bill.payUrl} target="_blank" rel="noreferrer" aria-label={t('row.pay', { name: bill.label })} title={t('row.payTitle')}>
+        {payUrl && open && (
+          // Paid on a portal, it is the way to pay: a labelled Open; otherwise the link is a shortcut.
+          <a className={pay?.payMethod === 'portal' ? secondaryButton : iconButton} href={payUrl} target="_blank" rel="noreferrer" aria-label={t('row.pay', { name: bill.label })} title={t('row.payTitle')}>
             <ExternalLink size={18} />
+            {pay?.payMethod === 'portal' && t('row.openPortal')}
           </a>
         )}
         {bill.emailId && !bill.emailId.startsWith('demo-') && !bill.emailId.startsWith('sample-') && (

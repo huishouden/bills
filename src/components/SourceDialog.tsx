@@ -5,9 +5,6 @@ import { BILL_KINDS, kindLabel, sourceProblem, type BillKind, type BillSettings,
 import { PaySection } from './PaySection';
 import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
-
-/** A link's start, the same in every language. */
-const URL_PLACEHOLDER = 'https://';
 interface Props {
   source: BillSource | null;
   onClose: () => void;
@@ -110,9 +107,6 @@ export function SourceDialog({ source, onClose, onSave, onDelete, contacts, paye
             </Chip>
           </div>
         </div>
-        <Field label={t('form.payLink')}>
-          <input className={inputClass} type="url" value={input.payUrl} onChange={(e) => set({ payUrl: e.target.value })} placeholder={URL_PLACEHOLDER} />
-        </Field>
         <PaySection value={input} onChange={set} contacts={contacts} payers={payers} me={me} settings={settings} autopay={input.autopay === true} onSaveContact={onSaveContact} />
         {problem && (
           <p role="alert" className="text-base text-error">

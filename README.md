@@ -23,9 +23,9 @@ Live at https://huishouden-piekstra.web.app/bills/; the old address, huishouden-
 |---|---|
 | ![Rent with how to pay, the landlord's phone and email, its reminders and Mark paid](docs/screenshots/phone-bill.png) | ![Edit bill: Zelle, payment details, who pays, reminders 3 days before and on the due day](docs/screenshots/phone-bill-reminders.png) |
 
-| Bills settings | |
+| Bills settings | How to pay, filled in from the payee |
 |---|---|
-| ![Notifications on this device, mute for me, and the household's reminder default](docs/screenshots/phone-settings.png) | |
+| ![Notifications on this device, mute for me, and the household's reminder default](docs/screenshots/phone-settings.png) | ![Add a bill: Pay to Example Rentals, Zelle, their saved Zelle email filled in, their phone one tap away](docs/screenshots/phone-pay-prefill.png) |
 
 | History | Phone |
 |---|---|
@@ -41,7 +41,14 @@ Each bill (or, for email bills, its bill source) can say how it is paid:
   one. Its phone and email show on the bill, each with a copy button.
 - **How to pay**: Zelle, Venmo, bank transfer, check, cash, card or the online portal (the pay
   link), with payment details such as the Zelle email, shown with a copy button. The row reads
-  "Zelle to Example Rentals".
+  "Zelle to Example Rentals"; a portal bill has Open in its row.
+- **Details filled in from the payee**: whichever is chosen first, the payee or the way to pay,
+  the details fill in with what was saved on the contact before, else their only phone or email
+  for Zelle (their phone for Venmo, their address for a check, their https website for a portal),
+  with their other details as "Use …" chips. Choosing another payee replaces only what was filled
+  in, never typed text. The first details saved for a contact and way to pay are remembered on
+  the contact ("Saved on Example Rentals"), shown and editable in its contact dialog under "How to
+  pay them", so the next bill to them fills in by itself. A Venmo username gets its @.
 - **Who pays**: one admin or member, or anyone.
 
 A repeating bill's next one keeps all of this. The portal's To-do list and the household agenda
