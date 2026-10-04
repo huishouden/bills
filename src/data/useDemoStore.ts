@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSampleStore } from '@huishouden/pwa-kit/react/store';
 import { gmailMailbox } from '@huishouden/pwa-kit/gmail';
-import { DEMO_MEMBERS, demoData, type BillsData } from '../lib/demo';
+import { DEMO_MEMBERS, demoData, payeeContacts, type BillsData } from '../lib/demo';
 import { sampleMailbox } from '../lib/sampleMailbox';
 import { createActions, type Backend, type DataKey } from './actions';
 import type { BillsStore, MailAccess } from './types';
@@ -31,5 +31,6 @@ export function useDemoStore(clock: () => number): BillsStore {
       } };
   }, [clock]);
 
-  return { data, ready: true, actions, mail, me, members: DEMO_MEMBERS, payers: DEMO_MEMBERS, clock, sample: true };
+  const shown = useMemo(() => ({ ...data, contacts: payeeContacts(data) }), [data]);
+  return { data: shown, ready: true, actions, mail, me, members: DEMO_MEMBERS, payers: DEMO_MEMBERS, clock, sample: true };
 }

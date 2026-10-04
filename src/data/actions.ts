@@ -1,7 +1,7 @@
 import { changes, withoutId, type Backend as KitBackend, type Op as KitOp } from '@huishouden/pwa-kit/store';
 import { track } from '@huishouden/pwa-kit/observability';
-import type { BillsData } from '../lib/demo';
-import { cleanContact } from '@huishouden/pwa-kit/contact-core';
+import { payeeContacts, type BillsData } from '../lib/demo';
+import { CONTACT_PAY_COLLECTION, cleanContact, contactPayDoc } from '@huishouden/pwa-kit/contact-core';
 import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSuggestionDoc, type PayFields } from '../lib/model';
 import { deviceTimeZone } from '../lib/reminders';
 import { suggestionId } from '../lib/suggestions';
@@ -20,6 +20,8 @@ export const COLLECTIONS = {
   syncs: 'billSync',
   answers: 'billSuggestions',
   contacts: 'contacts',
+  // Pay details are money, kept from helpers and kids who read open contacts (pwa-kit contacts).
+  contactPay: CONTACT_PAY_COLLECTION,
   settings: 'billSettings',
 } as const satisfies Partial<Record<keyof BillsData, string>>;
 export type DataKey = keyof typeof COLLECTIONS;
@@ -40,9 +42,9 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
    * Zelle phone, the portal's link), the payee remembers it, so the next bill to them fills in.
    */
   const remember = (data: PayFields & { payUrl?: string }, now: number): Op[] => {
-    const contact = data.payeeContactId ? read().contacts.find((c) => c.id === data.payeeContactId) : undefined;
+    const contact = data.payeeContactId ? payeeContacts(read()).find((c) => c.id === data.payeeContactId) : undefined;
     const pay = rememberedPay(contact, data.payMethod, data[detailField(data.payMethod)]);
-    return contact && pay ? [{ col: 'contacts', id: contact.id, data: { pay, updatedAt: now, by: me }, merge: true }] : [];
+    return contact && pay ? [{ col: 'contactPay', id: contact.id, data: { ...pay, updatedAt: now, by: me }, merge: true }] : [];
   };
 
   return {
@@ -109,7 +111,10 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
       const now = clock();
       const existing = id ? read().contacts.find((c) => c.id === id) : undefined;
       const newId = id ?? backend.newId('contacts');
-      backend.write([{ col: 'contacts', id: newId, data: { ...cleanContact(input), createdAt: existing?.createdAt ?? now, ...(existing ? { updatedAt: now } : {}), by: me } }]);
+      const ops: Op[] = [{ col: 'contacts', id: newId, data: { ...cleanContact(input), createdAt: existing?.createdAt ?? now, ...(existing ? { updatedAt: now } : {}), by: me } }];
+      // "How to pay them", when the dialog showed it: replaced whole, removed when emptied.
+      if ('pay' in input) ops.push({ col: 'contactPay', id: newId, data: contactPayDoc(input.pay, me, now) });
+      backend.write(ops);
       return newId;
     },
     saveSettings: (input) => {
