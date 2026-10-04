@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Check, Plus } from 'lucide-react';
+import { dueWords } from '@huishouden/pwa-kit/time';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { BILL_KINDS, kindLabel, type BillKind, type SourceInput } from '../lib/model';
-import { dueWordsInline } from './bits';
 import { t, useT } from '../i18n';
 import type { Proposal } from '../lib/emailSync';
 import type { DiscoverState } from '../data/useEmailCheck';
@@ -21,7 +21,7 @@ function previewText(p: Proposal, today: string): string {
   if (!v || v.kind !== 'statement') return t('find.latestSubject', { subject: p.latestSubject });
   const parts = [
     v.amountDue ? formatMoney(v.amountDue) : null,
-    v.due ? t('find.due', { when: dueWordsInline(v.due, today) }) : null,
+    v.due ? t('find.due', { when: dueWords(v.due, today, { inline: true }) }) : null,
     v.autopay ? (v.autopay.enrolled ? t('find.autopayOn') : t('find.autopayOff')) : null,
   ];
   return t('find.latest', { details: parts.filter(Boolean).join(', ') });

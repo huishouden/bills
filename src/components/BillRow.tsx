@@ -1,9 +1,9 @@
 import { Check, ExternalLink, Mail, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react';
 import { formatMoney } from '@huishouden/pwa-kit/money';
-import { shortDate } from '@huishouden/pwa-kit/time';
+import { dueWords, shortDate } from '@huishouden/pwa-kit/time';
 import { kindLabel, type Bill } from '../lib/model';
 import { isOpen, type BillView } from '../lib/view';
-import { AutopayChip, dueWordsInline, KindIcon, personName } from './bits';
+import { AutopayChip, KindIcon, personName } from './bits';
 import { t, useT } from '../i18n';
 import { iconButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 
@@ -24,8 +24,8 @@ function whenText(v: BillView, today: string): string {
   if (!bill.due) return t('row.noDueDate');
   if (state === 'overdue') return days === -1 ? t('row.overdueYesterday') : t('row.overdueBy', { days: -days! });
   if (state === 'autopay' && bill.autopay?.nextDraft && bill.autopay.nextDraft !== bill.due)
-    return t('row.dueDrafts', { when: dueWordsInline(bill.due, today), draft: dueWordsInline(bill.autopay.nextDraft, today) });
-  return t('row.due', { when: dueWordsInline(bill.due, today) });
+    return t('row.dueDrafts', { when: dueWords(bill.due, today, { inline: true }), draft: dueWords(bill.autopay.nextDraft, today, { inline: true }) });
+  return t('row.due', { when: dueWords(bill.due, today, { inline: true }) });
 }
 
 function historyText(v: BillView, today: string, me: string): string {

@@ -7,6 +7,7 @@ import type { TodoInput } from '@huishouden/pwa-kit/todos';
 import { nextId, nextRepeat } from '../data/build';
 import { APP_URL, billRef } from './agenda';
 import type { Bill } from './model';
+import { t } from '../i18n';
 import { HORIZON_DAYS, viewBills, type BillState } from './view';
 
 /** Bills is money: only admins and members change bills (the rules' `staff()`). */
@@ -26,7 +27,8 @@ function nextOp(bill: Bill): Op[] {
 
 /**
  * Bills to pay, for the household's to-do list (`syncTodos`): each unpaid, not skipped bill the
- * Upcoming screen lists without autopay, within its 30 days (or with no due date). "Mark paid"
+ * Upcoming screen lists without autopay, within its 30 days (or with no due date), in the page's
+ * language (wrap in `localizeTodos` for every language). "Mark paid"
  * writes what the app's Paid button does; "Skip" marks it skipped (kept in History). Both add a
  * repeating bill's next one, as the app does. Always private: Bills is money.
  */
@@ -45,12 +47,12 @@ export function todoItems(bills: Bill[], now: number, url = APP_URL, horizon = H
         owner: bill.createdBy.toLowerCase(),
         private: true,
         done: {
-          label: 'Mark paid',
+          label: t('todo.markPaid'),
           ops: [{ col: 'bills', id: bill.id, data: { status: 'paid', paidAt: '$now', paidBy: '$me', paidVia: 'member', updatedAt: '$now' }, merge: true }, ...next],
           roles: STAFF,
         },
         cancel: {
-          label: 'Skip',
+          label: t('todo.skip'),
           ops: [{ col: 'bills', id: bill.id, data: { dismissed: true, updatedAt: '$now' }, merge: true }, ...next],
           roles: STAFF,
         },

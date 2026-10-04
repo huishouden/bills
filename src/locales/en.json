@@ -161,5 +161,11 @@
   "sources.subject": "subject has “{subject}”",
   "sources.label": "labelled {label}",
   "sources.howTitle": "How email checks work",
-  "sources.howBody": "Each check reads the last 60 days of email from these senders in the Gmail of whoever taps Check email, and fills in amounts, due dates and autopay. Nothing else in the mailbox is read or kept."
+  "sources.howBody": "Each check reads the last 60 days of email from these senders in the Gmail of whoever taps Check email, and fills in amounts, due dates and autopay. Nothing else in the mailbox is read or kept.",
+  "todo.markPaid": "Mark paid",
+  "todo.skip": "Skip",
+  "agenda.autopayUnknown": "autopay unknown",
+  "agenda.autopayCard": "autopay by card",
+  "agenda.autopayOn": "autopay on",
+  "agenda.autopayOff": "autopay off"
 }
