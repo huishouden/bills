@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/huishouden/bills/compare/v1.8.0...v1.9.0) (2026-10-04)
+
+
+### Features
+
+* Bills in Spanish and Dutch ([#29](https://github.com/huishouden/bills/issues/29)) ([675af8e](https://github.com/huishouden/bills/commit/675af8e616850ce633eda9a07398a03d2d51f990))
+
 ## [1.8.0](https://github.com/huishouden/bills/compare/v1.7.0...v1.8.0) (2026-10-03)
 
 
