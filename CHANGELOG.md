@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/huishouden/bills/compare/v1.9.0...v1.10.0) (2026-10-04)
+
+
+### Features
+
+* Add to calendar on every bill still to pay (kit v0.67.0) ([#31](https://github.com/huishouden/bills/issues/31)) ([bb49ad1](https://github.com/huishouden/bills/commit/bb49ad1221b9e9fbe81bf88e7ea15a159820f810))
+
 ## [1.9.0](https://github.com/huishouden/bills/compare/v1.8.0...v1.9.0) (2026-10-04)
 
 
