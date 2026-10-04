@@ -43,6 +43,11 @@ function itemFor({ bill, state }: BillView, url: string): Item | null {
   };
 }
 
+/** A bill as it goes on the household agenda, for "Add to calendar" on its row; null when it isn't due. */
+export function billCalendarEntry(view: BillView, url = APP_URL): Item | null {
+  return itemFor(view, url);
+}
+
 /** Everything Bills publishes, for `syncAgenda` (the kit keeps only the publishing window). */
 export function agendaItems(bills: Bill[], now: number, url = APP_URL): AgendaInput[] {
   return viewBills(bills, toYmd(now)).flatMap((v) => {
