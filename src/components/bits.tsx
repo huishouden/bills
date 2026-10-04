@@ -1,5 +1,8 @@
 import { Building2, Droplet, Flame, House, Receipt, ShieldCheck, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
+import { getLang } from '@huishouden/pwa-kit/i18n';
+import { dueWords } from '@huishouden/pwa-kit/time';
 import type { Autopay, BillKind } from '../lib/model';
+import { t, useT } from '../i18n';
 
 const ICONS: Record<BillKind, LucideIcon> = {
   electric: Zap,
@@ -27,7 +30,8 @@ export function KindIcon({ kind, attention, size = 22 }: { kind: BillKind; atten
 
 /** "Autopay on" (or "by card"), "Autopay off", "Autopay unknown": off and unknown take the attention colour when it matters. */
 export function AutopayChip({ autopay, attention }: { autopay: Autopay | null; attention?: boolean }) {
-  const text = autopay === null ? 'Autopay unknown' : autopay.enrolled ? (autopay.via === 'card' ? 'Autopay by card' : 'Autopay on') : 'Autopay off';
+  const t = useT();
+  const text = autopay === null ? t('autopay.unknown') : autopay.enrolled ? (autopay.via === 'card' ? t('autopay.card') : t('autopay.on')) : t('autopay.off');
   const tone = autopay?.enrolled
     ? 'border-forest-200 bg-tint text-link dark:border-forest-500'
     : attention
@@ -38,7 +42,16 @@ export function AutopayChip({ autopay, attention }: { autopay: Autopay | null; a
 
 /** "Sam" from sam@example.com; "you" for the signed-in member. */
 export function personName(email: string, me: string): string {
-  if (email.toLowerCase() === me.toLowerCase()) return 'you';
+  if (email.toLowerCase() === me.toLowerCase()) return t('person.you');
   const local = email.split('@')[0].split(/[._-]/)[0];
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : email;
+}
+
+/**
+ * A due day inside a sentence ("Due Friday", "Vence el viernes"): the kit's `dueWords` starts a
+ * list line with a capital, which English keeps ("Due Today") and Spanish and Dutch don't.
+ */
+export function dueWordsInline(due: string, today: string): string {
+  const words = dueWords(due, today);
+  return getLang() === 'en' ? words : words.charAt(0).toLocaleLowerCase() + words.slice(1);
 }

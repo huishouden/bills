@@ -13,6 +13,7 @@ import { BillsApp } from './BillsApp';
 import { Header } from './components/Header';
 import { PORTAL_URL } from './lib/portal';
 import { cardClass, primaryButton, SampleBanner, useToast } from '@huishouden/pwa-kit/react/ui';
+import { t, useT } from './i18n';
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -33,7 +34,7 @@ export default function App() {
       await signInWithGoogle();
     } catch (e) {
       const code = (e as { code?: string }).code;
-      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') setSignInError("Couldn't sign in. Try again.");
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') setSignInError(t('signIn.failed'));
     } finally {
       setSigningIn(false);
     }
@@ -56,6 +57,7 @@ interface FrameProps {
 }
 
 function SignedIn({ user, ...frame }: FrameProps & { user: User }) {
+  const t = useT();
   const email = (user.email ?? '').toLowerCase();
   const [state, setState] = useState<HouseholdState>({ status: 'loading' });
   useEffect(() => (email ? watchHousehold(db, email, setState) : undefined), [email]);
@@ -71,22 +73,19 @@ function SignedIn({ user, ...frame }: FrameProps & { user: User }) {
   // Helpers and kids never see the household's bills (the rules refuse every read): no listeners, syncs or email checks.
   if (state.status === 'ready' && !seesMoney(state.household, email)) return <MoneyRefusal user={user} {...frame} />;
   if (state.status === 'ready') return <LiveApp householdId={state.household.id} members={state.household.members} user={user} {...frame} />;
-  if (state.status === 'loading') return <Plain user={user} {...frame}>Finding your household.</Plain>;
+  if (state.status === 'loading') return <Plain user={user} {...frame}>{t('household.finding')}</Plain>;
   if (state.status === 'error')
     return (
       <Plain user={user} {...frame}>
-        Couldn't reach the household. Check the connection; the app retries on its own.
+        {t('household.unreachable')}
       </Plain>
     );
   return (
     <Plain user={user} {...frame}>
-      <h2 className="text-2xl font-semibold text-ink">Not in a household yet</h2>
-      <p className="mt-2">
-        {user.email} isn't a member of a Huishouden household. Ask someone in your household to invite this address from the Huishouden home screen, then open
-        Bills again. If you use another Google account for the household, sign out and sign in with that one.
-      </p>
+      <h2 className="text-2xl font-semibold text-ink">{t('household.noneTitle')}</h2>
+      <p className="mt-2">{t('household.noneBody', { email: user.email ?? '' })}</p>
       <a className={`${primaryButton} mt-5`} href={PORTAL_URL}>
-        Open Huishouden
+        {t('household.openPortal')}
       </a>
     </Plain>
   );
@@ -116,21 +115,21 @@ function DemoApp({ signInError, ...frame }: FrameProps & { signInError: string |
 }
 
 function DemoInner({ read, signInError, ...frame }: FrameProps & { read: () => number; signInError: string | null }) {
+  const t = useT();
   const { toast, notify, clear } = useToast();
   const store = useDemoStore(read);
-  const banner = (
-    <SampleBanner text="An invented household. Nothing is saved. Sign in to use your household’s own bills." notice={signInError ?? undefined} />
-  );
+  const banner = <SampleBanner text={t('sample.banner')} notice={signInError ?? undefined} />;
   return <BillsApp store={store} user={null} {...frame} toast={toast} notify={notify} clearToast={clear} banner={banner} />;
 }
 
 function MoneyRefusal({ user, ...frame }: FrameProps & { user: User | null }) {
+  const t = useT();
   return (
     <Plain user={user} {...frame}>
-      <h2 className="text-2xl font-semibold text-ink">Bills</h2>
+      <h2 className="text-2xl font-semibold text-ink">{t('app.name')}</h2>
       <p className="mt-2">{refusal('see-money')}</p>
       <a className={`${primaryButton} mt-5`} href={PORTAL_URL}>
-        Open Huishouden
+        {t('household.openPortal')}
       </a>
     </Plain>
   );

@@ -11,6 +11,8 @@ import type { BillsStore } from '../data/types';
 import { SubscriptionsLine, SuggestedBills } from '../components/SuggestedBills';
 import type { Suggestions } from '../lib/suggestions';
 import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
+import { HORIZON_DAYS } from '../lib/view';
+import { useT } from '../i18n';
 
 interface Props {
   store: BillsStore;
@@ -42,6 +44,7 @@ function Group({ title, children, count }: { title: string; children: ReactNode;
 
 /** The next 30 days: overdue first, then this week, then the rest of the month. */
 export function Upcoming({ store, views, today, now, check, onCheck, onFind, onAdd, onEdit, onMarkPaid, onSkip, onRemove, suggested, onAddSuggestion, onDismissSuggestion }: Props) {
+  const t = useT();
   const u = upcoming(views);
   const h = headline(u);
   const { sources, syncs } = store.data;
@@ -52,14 +55,15 @@ export function Upcoming({ store, views, today, now, check, onCheck, onFind, onA
     <>
       <div className={`${cardClass} p-5 sm:p-6`}>
         <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0 flex-1">
+          {/* basis-64: on a phone the headline takes the row and Add a bill wraps below it. */}
+          <div className="min-w-0 flex-1 basis-64">
             <h2 className="text-2xl font-semibold text-ink">{h.text}</h2>
-            {h.total && <p className="mt-1 text-lg text-muted tabular-nums">Total {formatMoney(h.total)}</p>}
+            {h.total && <p className="mt-1 text-lg text-muted tabular-nums">{t('upcoming.total', { amount: formatMoney(h.total) })}</p>}
             <SubscriptionsLine {...suggested.subscriptions} />
           </div>
           {!empty && (
             <button type="button" className={secondaryButton} onClick={onAdd}>
-              <Plus size={18} /> Add a bill
+              <Plus size={18} /> {t('upcoming.addBill')}
             </button>
           )}
         </div>
@@ -70,32 +74,32 @@ export function Upcoming({ store, views, today, now, check, onCheck, onFind, onA
         )}
         {empty ? (
           <div className="space-y-3 py-4 text-lg text-muted">
-            <p>Bills reads the statement emails providers send, so each bill's amount, due date and autopay show up here on their own. Bills with no email can be added by hand.</p>
+            <p>{t('upcoming.emptyIntro')}</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={primaryButton} onClick={onFind}>
-                <Search size={18} /> Find bills in my email
+                <Search size={18} /> {t('find.title')}
               </button>
               <button type="button" className={secondaryButton} onClick={onAdd}>
-                <Plus size={18} /> Add a bill
+                <Plus size={18} /> {t('upcoming.addBill')}
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-5">
-            <Group title="Overdue" count={u.overdue.length}>
+            <Group title={t('upcoming.overdue')} count={u.overdue.length}>
               {u.overdue.map(row)}
             </Group>
-            <Group title="This week" count={u.week.length}>
+            <Group title={t('upcoming.week')} count={u.week.length}>
               {u.week.map(row)}
             </Group>
-            <Group title="Later this month" count={u.later.length}>
+            <Group title={t('upcoming.later')} count={u.later.length}>
               {u.later.map(row)}
             </Group>
-            <Group title="No due date" count={u.noDate.length}>
+            <Group title={t('row.noDueDate')} count={u.noDate.length}>
               {u.noDate.map(row)}
             </Group>
-            {!h.count && !u.noDate.length && <p className="text-lg text-muted">Nothing due in the next 30 days.</p>}
-            {u.beyond > 0 && <p className="px-1 text-base text-muted">{u.beyond} more due after the next 30 days.</p>}
+            {!h.count && !u.noDate.length && <p className="text-lg text-muted">{t('upcoming.nothingDue', { days: HORIZON_DAYS })}</p>}
+            {u.beyond > 0 && <p className="px-1 text-base text-muted">{t('upcoming.beyond', { count: u.beyond, days: HORIZON_DAYS })}</p>}
           </div>
         )}
       </div>
