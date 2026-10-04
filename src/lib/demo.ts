@@ -152,7 +152,7 @@ export function demoData(): BillsData {
   });
   bills.push(rent('2031-05-08', { status: 'paid', paidAt: DEMO_NOW - 7 * DAY, paidBy: ALEX, paidVia: 'member' }), rent('2031-06-08', { createdAt: DEMO_NOW - 7 * DAY, createdBy: ALEX }));
   const contacts: Contact[] = [
-    { id: 'landlord', name: 'Example Rentals', role: 'Landlord', phone: '(555) 010-0123', email: 'rentals@example.com', apps: ['home', 'bills'], private: false, createdAt: DEMO_NOW - 90 * DAY, by: SAM },
+    { id: 'landlord', name: 'Example Rentals', role: 'Landlord', phone: '(555) 010-0123', email: 'rentals@example.com', pay: { zelle: 'rentals@example.com' }, apps: ['home', 'bills'], private: false, createdAt: DEMO_NOW - 90 * DAY, by: SAM },
     { id: 'plumber', name: 'Example Plumbing', role: 'Plumber', phone: '(555) 010-0188', apps: ['home'], private: false, createdAt: DEMO_NOW - 80 * DAY, by: ALEX },
   ];
   const syncs: BillSync[] = [{ id: SAM, checkedAt: DEMO_NOW - 2 * HOUR, by: SAM, sources: 5, emails: 9, bills: 1, errors: [] }];

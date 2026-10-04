@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { centsToInput, moneyToCents, parseCents } from '@huishouden/pwa-kit/money';
 import type { Contact, ContactInput } from '@huishouden/pwa-kit/contact-core';
-import { BILL_KINDS, kindLabel, type Bill, type BillKind, type BillSettings, type ManualBillInput, type PayFields, type Repeat } from '../lib/model';
-import { PaySection } from './PaySection';
+import { BILL_KINDS, kindLabel, type Bill, type BillKind, type BillSettings, type ManualBillInput, type Repeat } from '../lib/model';
+import { PaySection, type PayValue } from './PaySection';
 import { useT } from '../i18n';
 import { Chip, Dialog, Field, ghostButton, inputClass, primaryButton } from '@huishouden/pwa-kit/react/ui';
 
-
-/** A link's start, the same in every language. */
-const URL_PLACEHOLDER = 'https://';
 interface Props {
   bill: Bill | null;
   today: string;
@@ -40,8 +37,8 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete, contacts, p
   const [amount, setAmount] = useState(bill?.amountDue ? centsToInput(moneyToCents(bill.amountDue)) : '');
   const [autopay, setAutopay] = useState<boolean | null>(bill?.autopay ? bill.autopay.enrolled : null);
   const [repeat, setRepeat] = useState<Repeat | null>(bill?.repeat ?? null);
-  const [payUrl, setPayUrl] = useState(bill?.payUrl ?? '');
-  const [pay, setPay] = useState<PayFields>({ payeeContactId: bill?.payeeContactId, payMethod: bill?.payMethod, payNote: bill?.payNote, payer: bill?.payer, remind: bill?.remind });
+  const [pay, setPay] = useState<PayValue>({ payeeContactId: bill?.payeeContactId, payMethod: bill?.payMethod, payNote: bill?.payNote, payUrl: bill?.payUrl, payer: bill?.payer, remind: bill?.remind });
+  const payUrl = pay.payUrl ?? '';
   const [problem, setProblem] = useState<string | null>(null);
 
   const save = () => {
@@ -50,7 +47,7 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete, contacts, p
     if (!label.trim()) return setProblem(t('form.noName'));
     if (amount.trim() && money === null) return setProblem(t('billDialog.badAmount', { example: centsToInput(12000) }));
     if (payUrl.trim() && !payUrl.trim().startsWith('https://')) return setProblem(t('form.badLink'));
-    onSave({ label, kind, due: due || null, amount: money, autopay, repeat, payUrl: payUrl.trim() || undefined, ...pay });
+    onSave({ label, kind, due: due || null, amount: money, autopay, repeat, ...pay, payUrl: payUrl.trim() || undefined });
     onClose();
   };
 
@@ -127,9 +124,6 @@ export function BillDialog({ bill, today, onClose, onSave, onDelete, contacts, p
           </div>
           {repeat && <span className="mt-1 block text-sm text-muted">{t('billDialog.repeatHint')}</span>}
         </div>
-        <Field label={t('form.payLink')}>
-          <input className={inputClass} type="url" value={payUrl} onChange={(e) => setPayUrl(e.target.value)} placeholder={URL_PLACEHOLDER} />
-        </Field>
         <PaySection
           value={pay}
           onChange={(patch) => setPay((p) => ({ ...p, ...patch }))}

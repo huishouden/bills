@@ -111,6 +111,22 @@ test("phone: a bill's payee, way to pay and reminders", async ({ page }) => {
   });
 });
 
+test("phone: how to pay, filled in from the payee", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await captureScreenshot(page, 'phone-pay-prefill', {
+    fixedTime,
+    prepare: async (p) => {
+      await p.getByRole('button', { name: 'Add a bill' }).first().click();
+      const dialog = p.getByRole('dialog', { name: 'Add a bill' });
+      await dialog.getByLabel('Name').first().fill('Rent');
+      await dialog.getByLabel('Pay to').selectOption({ label: 'Example Rentals (Landlord)' });
+      await dialog.getByRole('group', { name: 'How to pay' }).getByRole('button', { name: 'Zelle' }).click();
+      await expect(dialog.getByLabel('Zelle phone or email')).toHaveValue('rentals@example.com');
+      await dialog.getByText('Paying it').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    },
+  });
+});
+
 test('phone: Bills settings', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await captureScreenshot(page, 'phone-settings', {

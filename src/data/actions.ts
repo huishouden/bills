@@ -2,9 +2,10 @@ import { changes, withoutId, type Backend as KitBackend, type Op as KitOp } from
 import { track } from '@huishouden/pwa-kit/observability';
 import type { BillsData } from '../lib/demo';
 import { cleanContact } from '@huishouden/pwa-kit/contact-core';
-import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSuggestionDoc } from '../lib/model';
+import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSuggestionDoc, type PayFields } from '../lib/model';
 import { deviceTimeZone } from '../lib/reminders';
 import { suggestionId } from '../lib/suggestions';
+import { detailField, rememberedPay } from '../lib/payDetails';
 import { nextId, nextRepeat, paidDoc, unpaidDoc } from './build';
 import type { BillsActions } from './types';
 
@@ -34,6 +35,16 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
   const find = (col: DataKey, id: string) => (read()[col] as { id: string }[]).find((x) => x.id === id);
   const change = changes(backend, find);
 
+  /**
+   * The first time a bill or source is saved with a payee, a way of paying and its detail (the
+   * Zelle phone, the portal's link), the payee remembers it, so the next bill to them fills in.
+   */
+  const remember = (data: PayFields & { payUrl?: string }, now: number): Op[] => {
+    const contact = data.payeeContactId ? read().contacts.find((c) => c.id === data.payeeContactId) : undefined;
+    const pay = rememberedPay(contact, data.payMethod, data[detailField(data.payMethod)]);
+    return contact && pay ? [{ col: 'contacts', id: contact.id, data: { pay, updatedAt: now, by: me }, merge: true }] : [];
+  };
+
   return {
     markPaid: (bill) => {
       track('mark bill paid');
@@ -57,7 +68,8 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
       track('add bill');
       const now = clock();
       const existing = id ? read().bills.find((b) => b.id === id) : undefined;
-      backend.write([{ col: 'bills', id: id ?? backend.newId('bills'), data: manualBillDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now, existing) }]);
+      const data = manualBillDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now, existing);
+      backend.write([{ col: 'bills', id: id ?? backend.newId('bills'), data }, ...remember(data, now)]);
     },
     // A manual bill is deleted; an email bill is hidden, so the next check doesn't bring it back.
     removeBill: (bill) =>
@@ -68,7 +80,7 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
       const now = clock();
       const existing = id ? read().sources.find((s) => s.id === id) : undefined;
       const data = sourceDoc(input, existing?.createdBy ?? me, existing?.createdAt ?? now, now);
-      const ops: Op[] = [{ col: 'sources', id: id ?? backend.newId('sources'), data }];
+      const ops: Op[] = [{ col: 'sources', id: id ?? backend.newId('sources'), data }, ...remember(data, now)];
       // A renamed or re-kinded source renames its bills too.
       if (existing && (existing.name !== data.name || existing.kind !== data.kind)) {
         for (const b of read().bills.filter((x) => x.sourceId === id)) ops.push({ col: 'bills', id: b.id, data: { label: data.name, kind: data.kind, updatedAt: now }, merge: true });

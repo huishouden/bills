@@ -150,4 +150,25 @@ describe('bills actions', () => {
     actions.saveContact('landlord', { name: 'Example Rentals', apps: ['home', 'bills'] });
     expect(read().contacts.find((c) => c.id === 'landlord')).toMatchObject({ createdAt: DEMO_NOW - 90 * 86_400_000, updatedAt: DEMO_NOW });
   });
+
+  test('saving a bill with a payee, a way of paying and its detail remembers it on the payee, once', () => {
+    const { actions, writes, read } = setup();
+    const bill = { label: 'Lawn', kind: 'other' as const, due: '2031-06-01', amount: '40.00', autopay: false, repeat: null, payeeContactId: 'plumber', payMethod: 'venmo' as const, payNote: 'example-plumbing' };
+    actions.saveManualBill(null, bill);
+    expect(writes.at(-1)!.map((o) => o.col)).toEqual(['bills', 'contacts']);
+    expect(writes.at(-1)![1]).toEqual({ col: 'contacts', id: 'plumber', data: { pay: { venmo: '@example-plumbing' }, updatedAt: DEMO_NOW, by: 'sam@example.com' }, merge: true });
+    expect(read().contacts.find((c) => c.id === 'plumber')).toMatchObject({ name: 'Example Plumbing', phone: '(555) 010-0188', pay: { venmo: '@example-plumbing' } });
+    // The next one, with another handle, leaves what was remembered.
+    actions.saveManualBill(null, { ...bill, payNote: '@someone-else' });
+    expect(writes.at(-1)!.map((o) => o.col)).toEqual(['bills']);
+  });
+
+  test("a portal's detail is its link; a source remembers too; landlord's Zelle was already saved", () => {
+    const { actions, writes, read } = setup();
+    actions.saveSource(null, { name: 'Example Water', kind: 'water', from: 'billing@example.com', autopay: false, payeeContactId: 'plumber', payMethod: 'portal', payUrl: 'https://pay.example.com/water' });
+    expect(read().contacts.find((c) => c.id === 'plumber')!.pay).toEqual({ portal: 'https://pay.example.com/water' });
+    actions.saveManualBill(null, { label: 'Rent', kind: 'rent', due: '2031-07-08', amount: '1850.00', autopay: false, repeat: null, payeeContactId: 'landlord', payMethod: 'zelle', payNote: '(555) 010-0123' });
+    expect(writes.at(-1)!.map((o) => o.col)).toEqual(['bills']);
+    expect(read().contacts.find((c) => c.id === 'landlord')!.pay).toEqual({ zelle: 'rentals@example.com' });
+  });
 });
