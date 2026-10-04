@@ -161,5 +161,11 @@
   "sources.subject": "el asunto dice “{subject}”",
   "sources.label": "con la etiqueta {label}",
   "sources.howTitle": "Cómo funcionan las revisiones del correo",
-  "sources.howBody": "Cada revisión lee los correos de los últimos 60 días de estos remitentes en el Gmail de quien toque Revisar el correo, y completa montos, vencimientos y pago automático. No se lee ni se guarda nada más del buzón."
+  "sources.howBody": "Cada revisión lee los correos de los últimos 60 días de estos remitentes en el Gmail de quien toque Revisar el correo, y completa montos, vencimientos y pago automático. No se lee ni se guarda nada más del buzón.",
+  "todo.markPaid": "Marcar pagada",
+  "todo.skip": "Omitir",
+  "agenda.autopayUnknown": "pago automático sin confirmar",
+  "agenda.autopayCard": "pago automático con tarjeta",
+  "agenda.autopayOn": "pago automático activado",
+  "agenda.autopayOff": "sin pago automático"
 }

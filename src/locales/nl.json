@@ -161,5 +161,11 @@
   "sources.subject": "onderwerp bevat ‘{subject}’",
   "sources.label": "met label {label}",
   "sources.howTitle": "Zo werken e-mailcontroles",
-  "sources.howBody": "Elke controle leest de e-mail van de afgelopen 60 dagen van deze afzenders in de Gmail van wie op E-mail controleren tikt, en vult bedragen, vervaldatums en incasso in. Verder wordt niets in de mailbox gelezen of bewaard."
+  "sources.howBody": "Elke controle leest de e-mail van de afgelopen 60 dagen van deze afzenders in de Gmail van wie op E-mail controleren tikt, en vult bedragen, vervaldatums en incasso in. Verder wordt niets in de mailbox gelezen of bewaard.",
+  "todo.markPaid": "Betaald",
+  "todo.skip": "Overslaan",
+  "agenda.autopayUnknown": "automatische incasso onbekend",
+  "agenda.autopayCard": "automatisch via creditcard",
+  "agenda.autopayOn": "automatische incasso aan",
+  "agenda.autopayOff": "geen automatische incasso"
 }

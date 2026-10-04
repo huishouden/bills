@@ -1,6 +1,4 @@
 import { Building2, Droplet, Flame, House, Receipt, ShieldCheck, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
-import { getLang } from '@huishouden/pwa-kit/i18n';
-import { dueWords } from '@huishouden/pwa-kit/time';
 import type { Autopay, BillKind } from '../lib/model';
 import { t, useT } from '../i18n';
 
@@ -47,11 +45,4 @@ export function personName(email: string, me: string): string {
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : email;
 }
 
-/**
- * A due day inside a sentence ("Due Friday", "Vence el viernes"): the kit's `dueWords` starts a
- * list line with a capital, which English keeps ("Due Today") and Spanish and Dutch don't.
- */
-export function dueWordsInline(due: string, today: string): string {
-  const words = dueWords(due, today);
-  return getLang() === 'en' ? words : words.charAt(0).toLocaleLowerCase() + words.slice(1);
-}
+

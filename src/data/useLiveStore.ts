@@ -7,8 +7,8 @@ import { spendingSince, toCharge } from '../lib/suggestions';
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
-import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
-import { syncTodos } from '@huishouden/pwa-kit/todos';
+import { localizeAgenda, removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
+import { localizeTodos, syncTodos } from '@huishouden/pwa-kit/todos';
 import { todoItems } from '../lib/todos';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
@@ -101,15 +101,19 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       follow: (ops: Op[], bills: Bill[]) => {
         for (const id of new Set(ops.filter((o) => o.col === 'bills').map((o) => o.id))) {
           const bill = bills.find((b) => b.id === id);
-          if (bill) void replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), billAgenda(bill, bills, clock()), { by: me }).catch(warn);
+          // Every language's words, so the portal shows each reader their own.
+          if (bill) void localizeAgenda(() => billAgenda(bill, bills, clock())).then((items) => replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), items, { by: me })).catch(warn);
           else void removeAgenda(db, householdId, AGENDA_APP, agendaRef(id)).catch(warn);
         }
       },
-      sync: (bills: Bill[]) => void syncAgenda(db, householdId, AGENDA_APP, agendaItems(bills, clock()), { by: me }).catch(warn),
+      sync: (bills: Bill[]) => void localizeAgenda(() => agendaItems(bills, clock())).then((items) => syncAgenda(db, householdId, AGENDA_APP, items, { by: me })).catch(warn),
       // The household's to-do list (bills to pay), written whole: on open and after every write here,
       // at once, so it is up to date even if the app is closed right after. Paid or skipped on the
       // portal, the item is removed there.
-      todos: (bills: Bill[]) => void syncTodos(db, householdId, AGENDA_APP, todoItems(bills, clock()), { by: me }).catch((e) => console.warn('To-do update failed', e)),
+      todos: (bills: Bill[]) =>
+        void localizeTodos(() => todoItems(bills, clock()))
+          .then((items) => syncTodos(db, householdId, AGENDA_APP, items, { by: me }))
+          .catch((e) => console.warn('To-do update failed', e)),
     };
   }, [householdId, me]);
 
