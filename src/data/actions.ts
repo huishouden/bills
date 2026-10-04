@@ -3,7 +3,7 @@ import { track } from '@huishouden/pwa-kit/observability';
 import { payeeContacts, type BillsData } from '../lib/demo';
 import { CONTACT_PAY_COLLECTION, cleanContact, contactPayDoc } from '@huishouden/pwa-kit/contact-core';
 import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSuggestionDoc, type PayFields } from '../lib/model';
-import { deviceTimeZone } from '../lib/reminders';
+import { reminderZone } from '../lib/reminders';
 import { suggestionId } from '../lib/suggestions';
 import { detailField, rememberedPay } from '../lib/payDetails';
 import { nextId, nextRepeat, paidDoc, unpaidDoc } from './build';
@@ -123,7 +123,7 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
         remindDefault: input.remindDefault,
         remindDays: cleanDays(input.remindDays),
         remindOverdue: input.remindOverdue,
-        timeZone: input.timeZone || deviceTimeZone(),
+        timeZone: reminderZone({ timeZone: input.timeZone }),
         updatedAt: clock(),
         updatedBy: me,
       };

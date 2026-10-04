@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Checkbox, Chip, Dialog, ghostButton, overline, primaryButton } from '@huishouden/pwa-kit/react/ui';
+import { useHome } from '@huishouden/pwa-kit/react/home';
 import { useT } from '../i18n';
 import { cleanDays, DEFAULT_BILL_SETTINGS, REMIND_MAX_COUNT, type BillSettings, type RemindDefault } from '../lib/model';
-import { deviceTimeZone } from '../lib/reminders';
+import { deviceTimeZone, reminderZone } from '../lib/reminders';
 import { DeviceNotifications } from './Notifications';
 import { DAY_CHOICES } from './PaySection';
 
@@ -29,7 +30,8 @@ export function SettingsDialog({ settings, live, onSave, onClose }: Props) {
   const [remindDefault, setDefault] = useState<RemindDefault>(s.remindDefault);
   const [days, setDays] = useState<number[]>(cleanDays(s.remindDays));
   const [overdue, setOverdue] = useState(s.remindOverdue);
-  const zone = s.timeZone || deviceTimeZone();
+  const home = useHome();
+  const zone = reminderZone(s, home);
 
   const toggle = (d: number) => {
     const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d];

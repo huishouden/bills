@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { zonedTime } from '@huishouden/pwa-kit/ics';
 import { DEMO_NOW, demoData } from './demo';
 import { DEFAULT_BILL_SETTINGS, type Bill, type BillSettings } from './model';
-import { billReminders, billUrl, remindPlan, reminderRef } from './reminders';
+import { setHome } from '@huishouden/pwa-kit/home';
+import { billReminders, billUrl, remindPlan, reminderRef, reminderZone } from './reminders';
 
 const data = demoData();
 const NY: BillSettings = { ...DEFAULT_BILL_SETTINGS, timeZone: 'America/New_York' };
@@ -73,6 +74,23 @@ describe('billReminders', () => {
     expect(late.map((r) => r.title)).toEqual(['Rent is overdue']);
     const la = billReminders(data.bills, ctx({ ...NY, timeZone: 'America/Los_Angeles' }));
     expect(la[0].at - list[0].at).toBe(3 * 3_600_000);
+  });
+
+  test("the household's home zone wins over the saved one: 9:00 at home wherever the phone is", () => {
+    const home = { address: '12 Example Lane, Springfield, Illinois 62701', lat: 39.7817, lng: -89.6501, timeZone: 'America/Chicago', setBy: 'alex@example.com', updatedAt: 1 };
+    setHome(home);
+    try {
+      expect(reminderZone(NY)).toBe('America/Chicago');
+      const chicago = billReminders(data.bills, ctx());
+      expect(chicago.map((r) => r.at)).toEqual(list.map((r) => r.at + 3_600_000));
+      // A home without a zone leaves the saved one.
+      setHome({ ...home, timeZone: undefined });
+      expect(reminderZone(NY)).toBe('America/New_York');
+    } finally {
+      setHome(undefined);
+    }
+    expect(reminderZone(NY)).toBe('America/New_York');
+    expect(reminderZone(NY, { timeZone: 'Europe/Amsterdam' })).toBe('Europe/Amsterdam');
   });
 
   test('stable ids: the same reminder is written to the same document', () => {

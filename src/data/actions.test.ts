@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { setHome } from '@huishouden/pwa-kit/home';
 import { memoryStore } from '@huishouden/pwa-kit/store';
 import { DEMO_NOW, demoData, payeeContacts, type BillsData } from '../lib/demo';
 import { createActions, type DataKey, type Op } from './actions';
@@ -141,6 +142,17 @@ describe('bills actions', () => {
     expect(writes.at(-1)).toEqual([{ col: 'settings', id: 'main', data: { remindDefault: 'manual', remindDays: [7, 3, 0], remindOverdue: false, timeZone: 'America/Chicago', updatedAt: DEMO_NOW, updatedBy: 'sam@example.com' } }]);
     actions.saveSettings({ remindDefault: 'none', remindDays: [], remindOverdue: true });
     expect((writes.at(-1)![0].data as { timeZone: string }).timeZone).toBeTruthy();
+  });
+
+  test("settings keep the household's home zone when its home has one", () => {
+    const { actions, writes } = setup();
+    setHome({ address: '12 Example Lane, Springfield, Illinois 62701', lat: 39.7817, lng: -89.6501, timeZone: 'America/Chicago', setBy: 'sam@example.com', updatedAt: 1 });
+    try {
+      actions.saveSettings({ remindDefault: 'manual', remindDays: [3], remindOverdue: true, timeZone: 'Europe/Amsterdam' });
+      expect((writes.at(-1)![0].data as { timeZone: string }).timeZone).toBe('America/Chicago');
+    } finally {
+      setHome(undefined);
+    }
   });
 
   test('a new contact gets an id the bill can name; an edit keeps when it was added', () => {

@@ -1,4 +1,5 @@
 import type { Contact } from '@huishouden/pwa-kit/contact-core';
+import { getHome, householdTimeZone, type HouseholdHome } from '@huishouden/pwa-kit/home';
 import { zonedTime } from '@huishouden/pwa-kit/ics';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { reminderId, type ReminderInput } from '@huishouden/pwa-kit/reminders';
@@ -21,6 +22,13 @@ export const billUrl = (billId: string) =>
 
 /** The device's time zone, for a household that hasn't saved one. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+/**
+ * The zone reminders keep: the household's home zone when its home has one (so 9:00 is 9:00 at
+ * home wherever the phone is), else the one saved with the settings, else this device's.
+ */
+export const reminderZone = (settings: Pick<BillSettings, 'timeZone'> | null, home: Pick<HouseholdHome, 'timeZone'> | undefined = getHome()) =>
+  householdTimeZone(home, settings?.timeZone || deviceTimeZone());
 
 export interface Plan {
   /** Days before the date, 0 the day itself, latest first. */
@@ -68,7 +76,7 @@ function title(label: string, kind: 'before' | 'today' | 'overdue', days: number
  */
 export function billReminders(bills: Bill[], { sources, contacts, settings, now }: ReminderContext): ReminderInput[] {
   const s = settings ?? DEFAULT_BILL_SETTINGS;
-  const zone = s.timeZone || deviceTimeZone();
+  const zone = reminderZone(s);
   const at = (day: Ymd) => zonedTime(day, REMIND_TIME, zone);
   const out: ReminderInput[] = [];
   for (const { bill, state } of viewBills(bills, toYmd(now))) {
