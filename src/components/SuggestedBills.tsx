@@ -1,9 +1,10 @@
 import { CreditCard, Plus } from 'lucide-react';
 import { formatCents } from '@huishouden/pwa-kit/money';
-import { CADENCE_LABELS, type RecurringCandidate } from '@huishouden/pwa-kit/recurring';
+import type { RecurringCandidate } from '@huishouden/pwa-kit/recurring';
 import { shortDate } from '@huishouden/pwa-kit/time';
 import { cardClass, ghostButton, overline, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 import { suggestionLabel } from '../lib/suggestions';
+import { t, useT } from '../i18n';
 
 interface Props {
   fresh: RecurringCandidate[];
@@ -16,17 +17,18 @@ interface Props {
 const money = (amount: number) => formatCents(Math.round(amount * 100));
 
 function detail(c: RecurringCandidate, today: string): string {
-  const amount = c.amountVaries ? `about ${money(c.typicalAmount)}` : money(c.typicalAmount);
-  return `${CADENCE_LABELS[c.cadence]}, ${amount} · next ${shortDate(c.nextExpected, today)} · ${c.occurrences} charges`;
+  const amount = c.amountVaries ? t('suggested.about', { amount: money(c.typicalAmount) }) : money(c.typicalAmount);
+  return t('suggested.detail', { cadence: c.cadence, amount, date: shortDate(c.nextExpected, today), count: c.occurrences });
 }
 
 /** Regular charges in the household's card spending that aren't bills here yet. Shown only when there are some. */
 export function SuggestedBills({ fresh, all, today, onAdd, onDismiss }: Props) {
+  const t = useT();
   if (!fresh.length) return null;
   return (
-    <section className={`${cardClass} px-5 py-4 sm:px-6`} aria-label="Possible regular bills">
-      <h2 className={`${overline} px-1`}>Possible regular bills</h2>
-      <p className="mt-1 px-1 text-base text-muted">Regular charges on the household's cards. Add one to see it with the other bills.</p>
+    <section className={`${cardClass} px-5 py-4 sm:px-6`} aria-label={t('suggested.title')}>
+      <h2 className={`${overline} px-1`}>{t('suggested.title')}</h2>
+      <p className="mt-1 px-1 text-base text-muted">{t('suggested.intro')}</p>
       <ul className="mt-2 divide-y divide-line">
         {fresh.map((c) => {
           const name = suggestionLabel(c, all);
@@ -40,11 +42,11 @@ export function SuggestedBills({ fresh, all, today, onAdd, onDismiss }: Props) {
                 <p className="text-sm text-muted">{detail(c, today)}</p>
               </div>
               <div className="flex shrink-0 gap-1">
-                <button type="button" className={ghostButton} onClick={() => onDismiss(c)} aria-label={`Not a bill: ${name}`}>
-                  Not a bill
+                <button type="button" className={ghostButton} onClick={() => onDismiss(c)} aria-label={t('suggested.notABillLabel', { name })}>
+                  {t('suggested.notABill')}
                 </button>
-                <button type="button" className={secondaryButton} onClick={() => onAdd(c)} aria-label={`Add ${name}`}>
-                  <Plus size={18} /> Add
+                <button type="button" className={secondaryButton} onClick={() => onAdd(c)} aria-label={t('suggested.addLabel', { name })}>
+                  <Plus size={18} /> {t('common.add')}
                 </button>
               </div>
             </li>
@@ -57,10 +59,11 @@ export function SuggestedBills({ fresh, all, today, onAdd, onDismiss }: Props) {
 
 /** "Subscriptions: $54.97/month across 4": what the household's subscriptions cost per month. */
 export function SubscriptionsLine({ count, monthly }: { count: number; monthly: number }) {
+  const t = useT();
   if (!count) return null;
   return (
     <p className="mt-1 text-base text-muted tabular-nums">
-      Subscriptions: {money(monthly)}/month across {count}
+      {t('suggested.subscriptions', { amount: money(monthly), count })}
     </p>
   );
 }

@@ -1,7 +1,9 @@
 import { allDayStart, type AgendaInput } from '@huishouden/pwa-kit/agenda';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { appUrl } from '@huishouden/pwa-kit/site';
+import { capitalize } from '@huishouden/pwa-kit/i18n';
 import { toYmd } from '@huishouden/pwa-kit/time';
+import { t } from '../i18n';
 import type { Autopay, Bill } from './model';
 import { viewBills, type BillView } from './view';
 
@@ -17,7 +19,8 @@ export const billRef = (id: string) => `bill:${id}`;
 
 type Item = Omit<AgendaInput, 'ref'>;
 
-const autopayText = (a: Autopay | null) => (a === null ? 'autopay unknown' : a.enrolled ? (a.via === 'card' ? 'autopay by card' : 'autopay on') : 'autopay off');
+const autopayText = (a: Autopay | null) =>
+  t(a === null ? 'agenda.autopayUnknown' : a.enrolled ? (a.via === 'card' ? 'agenda.autopayCard' : 'agenda.autopayOn') : 'agenda.autopayOff');
 
 /**
  * A bill still to pay, on its due date: what the Upcoming screen lists with a date. Paid,
@@ -34,7 +37,7 @@ function itemFor({ bill, state }: BillView, url: string): Item | null {
     title: bill.label,
     start: allDayStart(bill.due),
     allDay: true,
-    detail: detail.charAt(0).toUpperCase() + detail.slice(1),
+    detail: capitalize(detail),
     url,
     ...(state === 'autopay' ? {} : { status: state === 'overdue' ? ('overdue' as const) : ('upcoming' as const) }),
   };

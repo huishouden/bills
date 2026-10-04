@@ -7,11 +7,12 @@ import { spendingSince, toCharge } from '../lib/suggestions';
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
-import { removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
-import { syncTodos } from '@huishouden/pwa-kit/todos';
+import { localizeAgenda, removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
+import { localizeTodos, syncTodos } from '@huishouden/pwa-kit/todos';
 import { todoItems } from '../lib/todos';
 import { auth, db } from './firebase';
 import { readError } from '@huishouden/pwa-kit/feedback';
+import { t } from '../i18n';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
 import { autopayRollovers } from './build';
 import { COLLECTIONS, createActions, type Backend, type DataKey, type Op } from './actions';
@@ -44,7 +45,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   const base = `households/${householdId}`;
 
   useEffect(() => {
-    const fail = (what: string) => (e: Error) => errorRef.current(readError(e, `Couldn't load ${what}`));
+    const fail = (prefix: string) => (e: Error) => errorRef.current(readError(e, prefix));
     const unsubs = [
       onSnapshot(
         collection(db, base, 'bills'),
@@ -56,7 +57,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         },
         (e) => {
           setAnswered((a) => ({ ...a, bills: true }));
-          fail('the bills')(e);
+          fail(t('live.loadBills'))(e);
         },
       ),
       onSnapshot(
@@ -67,18 +68,18 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         },
         (e) => {
           setAnswered((a) => ({ ...a, sources: true }));
-          fail('the bill sources')(e);
+          fail(t('live.loadSources'))(e);
         },
       ),
       onSnapshot(
         collection(db, base, 'billSync'),
         (s) => setSyncs(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<BillSync, 'id'>) }))),
-        fail('the email checks'),
+        fail(t('live.loadSyncs')),
       ),
       onSnapshot(
         collection(db, base, 'billSuggestions'),
         (s) => setAnswers(s.docs.map((d) => ({ id: d.id, ...(d.data() as BillSuggestionDoc) }))),
-        fail('the suggested bills'),
+        fail(t('live.loadSuggestions')),
       ),
       // Card spending from Huishouden Spending, read only, for "Possible regular bills". A failure
       // here only hides the suggestions, so it is logged rather than shown.
@@ -100,15 +101,19 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       follow: (ops: Op[], bills: Bill[]) => {
         for (const id of new Set(ops.filter((o) => o.col === 'bills').map((o) => o.id))) {
           const bill = bills.find((b) => b.id === id);
-          if (bill) void replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), billAgenda(bill, bills, clock()), { by: me }).catch(warn);
+          // Every language's words, so the portal shows each reader their own.
+          if (bill) void localizeAgenda(() => billAgenda(bill, bills, clock())).then((items) => replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), items, { by: me })).catch(warn);
           else void removeAgenda(db, householdId, AGENDA_APP, agendaRef(id)).catch(warn);
         }
       },
-      sync: (bills: Bill[]) => void syncAgenda(db, householdId, AGENDA_APP, agendaItems(bills, clock()), { by: me }).catch(warn),
+      sync: (bills: Bill[]) => void localizeAgenda(() => agendaItems(bills, clock())).then((items) => syncAgenda(db, householdId, AGENDA_APP, items, { by: me })).catch(warn),
       // The household's to-do list (bills to pay), written whole: on open and after every write here,
       // at once, so it is up to date even if the app is closed right after. Paid or skipped on the
       // portal, the item is removed there.
-      todos: (bills: Bill[]) => void syncTodos(db, householdId, AGENDA_APP, todoItems(bills, clock()), { by: me }).catch((e) => console.warn('To-do update failed', e)),
+      todos: (bills: Bill[]) =>
+        void localizeTodos(() => todoItems(bills, clock()))
+          .then((items) => syncTodos(db, householdId, AGENDA_APP, items, { by: me }))
+          .catch((e) => console.warn('To-do update failed', e)),
     };
   }, [householdId, me]);
 
@@ -120,7 +125,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     const now = clock();
     const next = autopayRollovers(billsRef.current, toYmd(now), me, now);
     if (next.length) {
-      void commitOps(db, base, next.map((n): Op => ({ col: 'bills', id: n.id, data: n.data })), path).catch((e) => errorRef.current(readError(e, "Couldn't add the next autopay bills")));
+      void commitOps(db, base, next.map((n): Op => ({ col: 'bills', id: n.id, data: n.data })), path).catch((e) => errorRef.current(readError(e, t('live.addNext'))));
     }
     const all = [...billsRef.current, ...next.map((n) => ({ id: n.id, ...n.data }))];
     agenda.sync(all);
@@ -128,7 +133,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
   }, [billsFromServer, agenda, base, me]);
 
   const actions = useMemo(() => {
-    const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, "Couldn't save")));
+    const report = (p: Promise<unknown>) => void p.catch((e) => errorRef.current(readError(e, t('live.save'))));
     const read = () => ({ bills: billsRef.current, sources: sourcesRef.current, syncs: [], charges: [], answers: answersRef.current });
     const backend: Backend = {
       newId: (key) => doc(collection(db, base, path(key))).id,
@@ -156,7 +161,9 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         return token ? gmailMailbox(token) : null;
       },
       request: async () => gmailMailbox(await requestGmailToken(auth)),
-      note: 'Google will warn that the app is unverified the first time. Bills only reads statement emails and never changes your mail.',
+      get note() {
+        return t('email.noteLive');
+      },
     }),
     [],
   );

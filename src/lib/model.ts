@@ -9,21 +9,25 @@ export type Ymd = string;
 /** A string decimal with two places, as the household's other money data is stored. */
 export type { Money } from '@huishouden/pwa-kit/money';
 import type { Money } from '@huishouden/pwa-kit/money';
+import { t } from '../i18n';
 
 export const BILL_KINDS = ['electric', 'gas', 'water', 'internet', 'phone', 'mortgage', 'hoa', 'insurance', 'other'] as const;
 export type BillKind = (typeof BILL_KINDS)[number];
 
-export const KIND_LABELS: Record<BillKind, string> = {
-  electric: 'Electric',
-  gas: 'Gas',
-  water: 'Water',
-  internet: 'Internet',
-  phone: 'Phone',
-  mortgage: 'Mortgage',
-  hoa: 'HOA',
-  insurance: 'Insurance',
-  other: 'Other',
-};
+const KIND_KEYS = {
+  electric: 'kinds.electric',
+  gas: 'kinds.gas',
+  water: 'kinds.water',
+  internet: 'kinds.internet',
+  phone: 'kinds.phone',
+  mortgage: 'kinds.mortgage',
+  hoa: 'kinds.hoa',
+  insurance: 'kinds.insurance',
+  other: 'kinds.other',
+} as const satisfies Record<BillKind, string>;
+
+/** What a kind is called in the active language: "Electric", "Luz", "Stroom". */
+export const kindLabel = (kind: BillKind): string => t(KIND_KEYS[kind] ?? 'kinds.other');
 
 export type BillStatus = 'due' | 'paid' | 'credit' | 'unknown';
 export type Repeat = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
@@ -168,9 +172,9 @@ export function sourceDoc(input: SourceInput, by: string, createdAt: number, now
 
 /** A source needs at least one way to recognise its emails. */
 export function sourceProblem(input: SourceInput): string | null {
-  if (!input.name.trim()) return 'Give it a name.';
-  if (!input.from?.trim() && !input.subject?.trim() && !input.label?.trim()) return 'Add a sender, subject words or a Gmail label.';
-  if (input.payUrl?.trim() && !input.payUrl.trim().startsWith('https://')) return 'The pay link must start with https://';
+  if (!input.name.trim()) return t('form.noName');
+  if (!input.from?.trim() && !input.subject?.trim() && !input.label?.trim()) return t('source.needsMatch');
+  if (input.payUrl?.trim() && !input.payUrl.trim().startsWith('https://')) return t('form.badLink');
   return null;
 }
 
