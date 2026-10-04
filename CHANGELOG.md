@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/huishouden/bills/compare/v1.11.0...v1.12.0) (2026-10-04)
+
+
+### Features
+
+* how to pay fills in from the payee, and the contact remembers it (kit 0.80.0) ([#40](https://github.com/huishouden/bills/issues/40)) ([835ff2e](https://github.com/huishouden/bills/commit/835ff2e14999c8cf6d79af8a9c26b8043dd5bee6))
+
 ## [1.11.0](https://github.com/huishouden/bills/compare/v1.10.0...v1.11.0) (2026-10-04)
 
 
