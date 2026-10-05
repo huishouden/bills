@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.17.3](https://github.com/huishouden/bills/compare/v1.17.2...v1.17.3) (2026-10-05)
+
+### Bug Fixes
+
+* Rebuild against the re-tagged kit ([8271e1e](https://github.com/huishouden/bills/commit/8271e1eac1c3384aba98ea69b0f4ca1853fb02b9))
+
 ## [1.17.2](https://github.com/huishouden/bills/compare/v1.17.1...v1.17.2) (2026-10-05)
 
 ### Changes
