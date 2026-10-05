@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.14.1](https://github.com/huishouden/bills/compare/v1.14.0...v1.14.1) (2026-10-05)
+
+### Documentation
+
+* refresh screenshots from 74b03be ([9de35ce](https://github.com/huishouden/bills/commit/9de35ceba84a07f972c33acb82efdd7c94ed5ddb))
+
 ## [1.14.0](https://github.com/huishouden/bills/compare/v1.13.1...v1.14.0) (2026-10-05)
 
 
