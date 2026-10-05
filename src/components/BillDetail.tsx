@@ -1,7 +1,7 @@
-import { Bell, BellOff, Check, ExternalLink, Mail, Pencil, Phone, SkipForward } from 'lucide-react';
+import { Bell, BellOff, ExternalLink, Mail, Pencil, Phone, SkipForward } from 'lucide-react';
 import { formatMoney } from '@huishouden/pwa-kit/money';
 import { telHref } from '@huishouden/pwa-kit/places';
-import { CopyButton, Dialog, ghostButton, linkClass, overline, primaryButton, secondaryButton } from '@huishouden/pwa-kit/react/ui';
+import { CompleteButton, CopyButton, Dialog, ghostButton, linkClass, overline, secondaryButton } from '@huishouden/pwa-kit/react/ui';
 import { useT } from '../i18n';
 import { contactRoleLabel } from '../lib/contacts';
 import { kindLabel, type Bill } from '../lib/model';
@@ -62,16 +62,16 @@ export function BillDetail({ view, today, me, info, plan, onClose, onMarkPaid, o
             </button>
           )}
           {open && onMarkPaid && (
-            <button
-              type="button"
-              className={primaryButton}
-              onClick={() => {
+            <CompleteButton
+              done={false}
+              name={bill.label}
+              verb={t('detail.markPaid')}
+              label={t('row.markPaid', { name: bill.label })}
+              onDone={() => {
                 onMarkPaid(bill);
                 onClose();
               }}
-            >
-              <Check size={18} /> {t('detail.markPaid')}
-            </button>
+            />
           )}
         </>
       }

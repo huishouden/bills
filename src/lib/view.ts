@@ -1,5 +1,6 @@
 import { sumMoney } from '@huishouden/pwa-kit/money';
 import { daysBetween } from '@huishouden/pwa-kit/time';
+import { canUndoDone } from '@huishouden/pwa-kit/react/ui';
 import type { Bill, Money, Ymd } from './model';
 import { t } from '../i18n';
 
@@ -76,16 +77,30 @@ export interface Upcoming {
   noDate: BillView[];
   /** Open bills due after the horizon. */
   beyond: number;
+  /**
+   * Bills a member marked paid in the last few hours (`canUndoDone`), by the group they were in:
+   * shown after the open ones, done, with Undo (DESIGN.md "Completion").
+   */
+  paid: { overdue: BillView[]; week: BillView[]; later: BillView[]; noDate: BillView[] };
 }
 
-export function upcoming(views: BillView[], horizon = HORIZON_DAYS): Upcoming {
+/** Whether a bill was marked paid here recently enough to show as done on Upcoming. */
+export const recentlyPaid = (v: BillView, now: number) => v.state === 'paid' && v.bill.paidVia === 'member' && canUndoDone(v.bill.paidAt, now);
+
+/** The next `horizon` days in groups; with `now`, the bills paid here in the last few hours too (`paid`). */
+export function upcoming(views: BillView[], horizon = HORIZON_DAYS, now?: number): Upcoming {
+  const groups = (list: BillView[]) => ({
+    overdue: list.filter((v) => v.days !== null && v.days < 0),
+    week: list.filter((v) => v.days !== null && v.days >= 0 && v.days <= ATTENTION_DAYS),
+    later: list.filter((v) => v.days !== null && v.days > ATTENTION_DAYS && v.days <= horizon),
+    noDate: list.filter((v) => v.days === null),
+  });
   const open = views.filter((v) => OPEN.includes(v.state)).sort(byDue);
+  const paid = now === undefined ? [] : views.filter((v) => recentlyPaid(v, now)).sort(byDue);
   return {
-    overdue: open.filter((v) => v.days !== null && v.days < 0),
-    week: open.filter((v) => v.days !== null && v.days >= 0 && v.days <= ATTENTION_DAYS),
-    later: open.filter((v) => v.days !== null && v.days > ATTENTION_DAYS && v.days <= horizon),
-    noDate: open.filter((v) => v.days === null),
+    ...groups(open),
     beyond: open.filter((v) => v.days !== null && v.days > horizon).length,
+    paid: groups(paid),
   };
 }
 

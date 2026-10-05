@@ -11,6 +11,11 @@ export interface BillsActions {
   /** Marks a bill paid; a repeating manual bill gets its next one. Returns the undo. */
   markPaid(bill: Bill): () => void;
   markUnpaid(bill: Bill): void;
+  /**
+   * Undo of a payment later in the day (the row's Undo): the bill unpaid again, and the next one
+   * its payment added taken back while nobody has changed it.
+   */
+  undoPaid(bill: Bill): void;
   /** Skips an unpaid bill (kept in history as skipped); a repeating manual bill gets its next one. Returns the undo. */
   skipBill(bill: Bill): () => void;
   /** A skipped bill back on the list. */
