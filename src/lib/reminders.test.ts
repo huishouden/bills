@@ -3,7 +3,10 @@ import { zonedTime } from '@huishouden/pwa-kit/ics';
 import { DEMO_NOW, demoData } from './demo';
 import { DEFAULT_BILL_SETTINGS, type Bill, type BillSettings } from './model';
 import { setHome } from '@huishouden/pwa-kit/home';
-import { billReminders, billUrl, remindPlan, reminderRef, reminderZone } from './reminders';
+import { readSource, sourceAllowed, stillDue } from '@huishouden/pwa-kit/reminder-source';
+import { reminderDoc } from '@huishouden/pwa-kit/reminders';
+import { billReminders, billSource, billUrl, remindPlan, reminderRef, reminderZone } from './reminders';
+import { todoItems } from './todos';
 
 const data = demoData();
 const NY: BillSettings = { ...DEFAULT_BILL_SETTINGS, timeZone: 'America/New_York' };
@@ -109,5 +112,39 @@ describe('billReminders', () => {
     const r = billReminders(data.bills, ctx({ ...NY, remindDefault: 'manual', remindDays: [1], remindOverdue: false }));
     expect(new Set(r.map((x) => x.title))).toContain('Example Power Co is due in 1 day');
     expect(r.some((x) => x.title.startsWith('Hulu') || x.title.startsWith('Example Fiber'))).toBe(false);
+  });
+});
+
+describe('the sender drops a bill reminder once the bill is paid elsewhere', () => {
+  const list = billReminders(data.bills, ctx());
+  // What the sender reads: the bill as stored, after a To-do action's merge (placeholders resolved).
+  const after = (bill: Bill, ops: { data: object | null }[] | undefined) => {
+    const merged: Record<string, unknown> = { ...bill };
+    for (const op of ops ?? []) Object.assign(merged, Object.fromEntries(Object.entries(op.data ?? {}).map(([k, v]) => [k, v === '$now' ? DEMO_NOW : v === '$me' ? 'sam@example.com' : v])));
+    return merged;
+  };
+  const due = (fields: Record<string, unknown> | null) => {
+    const source = readSource('bills', reminderDoc(list[0], 'alex@example.com', DEMO_NOW).source)!;
+    return stillDue(source, new Map([[`bills/${rent.id}`, fields]]));
+  };
+
+  test('every reminder names its bill, as the sender accepts from a member', () => {
+    expect(list.length).toBeGreaterThan(0);
+    for (const r of list) expect(r.source).toEqual(billSource(rent));
+    const stored = reminderDoc(list[0], 'alex@example.com', DEMO_NOW).source!;
+    expect(readSource('bills', stored)).toEqual(billSource(rent));
+    expect(sourceAllowed('bills', stored, 'alex@example.com', 'member', new Map())).toBe(true);
+    // Money: never from a helper or a kid, who can't see bills.
+    expect(sourceAllowed('bills', stored, 'sitter@example.com', 'helper', new Map())).toBe(false);
+    expect(sourceAllowed('bills', stored, 'kid@example.com', 'kid', new Map())).toBe(false);
+  });
+
+  test("unpaid: still due. Paid or skipped from the portal's To-do list, removed or re-dated: not", () => {
+    const todo = todoItems(data.bills, DEMO_NOW).find((t) => t.ref.includes(rent.id))!;
+    expect(due({ ...rent })).toBe(true);
+    expect(due(after(rent, todo.done?.ops))).toBe(false);
+    expect(due(after(rent, todo.cancel?.ops))).toBe(false);
+    expect(due(null)).toBe(false);
+    expect(due({ ...rent, due: '2031-07-08' })).toBe(false);
   });
 });
