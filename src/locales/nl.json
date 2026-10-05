@@ -150,6 +150,7 @@
   "upcoming.week": "Deze week",
   "upcoming.later": "Later deze maand",
   "upcoming.allPaid": "Alles betaald",
+  "upcoming.showPaid": "{count} betaald tonen",
   "upcoming.nothingDue": "Niets te betalen in de komende {days} dagen.",
   "upcoming.beyond": "Nog {count} te betalen na de komende {days} dagen.",
   "headline.bills": "{count, plural, one {# rekening} other {# rekeningen}} in de komende {days} dagen",
