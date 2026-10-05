@@ -64,6 +64,10 @@ Reminders are off unless someone turns them on:
 - Reminders go out at 9:00 in the household's time zone (saved with the settings) through the
   suite's notification sender (huishouden/notify): to the member who pays the bill, or else to
   every admin and member. Helpers and kids never get them.
+- **Mark paid** is an outlined button named for the bill. A bill marked paid here stays in its
+  group for six hours, after the ones still to pay: a check, its name muted, "Paid by you ·
+  10:30 AM" and a small **Undo** (which also takes back a repeating bill's untouched next one). A
+  group whose bills are all paid folds to "All paid". Paid bills are always in History.
 - Tapping a reminder opens the bill, with **Mark paid**. Paying, skipping or removing a bill in
   Bills cancels its pending reminders. One paid or skipped from the portal's To-do list
   has them cancelled the next time Bills opens on any device.
@@ -158,7 +162,7 @@ Signed-in members of a Huishouden household read and write these documents under
 - `todos/{id}` (app `bills`, ref `bill:{id}`, always private): each bill someone has to pay, for the
   portal's To-do list. These are the unpaid, unskipped bills without autopay that are due within 30
   days or have no due date. Title is the bill's name, detail the amount. `createdAt` is when the
-  bill was added and `due` its due day. **Mark paid** writes what **Paid** does: `status: 'paid'`,
+  bill was added and `due` its due day. The portal's **Mark paid** writes what Bills' **Mark paid** does: `status: 'paid'`,
   `paidAt`, `paidBy` and `paidVia: 'member'`. **Skip** sets `dismissed`. Both add a repeating
   bill's next one under the id the app uses (`{id}~{due}`), and only admins and members can run
   them. Written when the app opens and after every change to the bills made in it.

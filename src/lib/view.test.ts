@@ -72,6 +72,20 @@ describe('the sample household', () => {
     expect(history(v, TODAY).filter((x) => x.state === 'skipped').map((x) => x.bill.id)).toEqual(['power_2031-05-20', 'manual-window-cleaning']);
   });
 
+  test('a bill marked paid here stays on Upcoming, done, for six hours; the headline leaves it out', () => {
+    const at = new Date('2031-05-14T10:00:00').getTime();
+    const bills = demoData().bills.map((b) => (b.id === 'power_2031-05-20' ? { ...b, status: 'paid' as const, paidAt: at, paidBy: 'me@example.com', paidVia: 'member' as const } : b));
+    const v = viewBills(bills, TODAY);
+    const soon = upcoming(v, undefined, at + 3_600_000);
+    expect(soon.week.map((x) => x.bill.label)).toEqual(['Example Fiber']);
+    expect(soon.paid.week.map((x) => x.bill.label)).toEqual(['Example Power Co']);
+    expect(headline(soon).count).toBe(7);
+    expect(upcoming(v, undefined, at + 6 * 3_600_000).paid.week).toEqual([]);
+    expect(upcoming(v).paid.week).toEqual([]);
+    const email = viewBills(bills.map((b) => (b.id === 'power_2031-05-20' ? { ...b, paidVia: 'email' as const } : b)), TODAY);
+    expect(upcoming(email, undefined, at + 60_000).paid.week).toEqual([]);
+  });
+
   test('a removed paid or drafted email bill stays hidden everywhere', () => {
     const removed = ['power_2031-04-20', 'fiber_2031-04-16'];
     const bills = demoData().bills.map((b) => (removed.includes(b.id) ? { ...b, dismissed: true } : b));

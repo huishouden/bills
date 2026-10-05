@@ -30,6 +30,27 @@ describe('bills actions', () => {
     expect(sorted(read().bills)).toEqual(sorted(before.bills));
   });
 
+  test('Undo later in the day: unpaid again, and the untouched next one taken back', () => {
+    const { actions, read } = setup();
+    const before = read();
+    const bill = before.bills.find((b) => b.id === 'manual-insurance')!;
+    actions.markPaid(bill);
+    actions.undoPaid(read().bills.find((b) => b.id === bill.id)!);
+    expect(read().bills.find((b) => b.id === bill.id)).toMatchObject({ status: 'due' });
+    expect(read().bills.find((b) => b.id === bill.id)!.paidBy).toBeUndefined();
+    expect(read().bills.some((b) => b.id === 'manual-insurance~2031-09-10')).toBe(false);
+  });
+
+  test('Undo later keeps a next one someone has changed since', () => {
+    const { actions, read } = setup();
+    const bill = read().bills.find((b) => b.id === 'manual-insurance')!;
+    actions.markPaid(bill);
+    const next = read().bills.find((b) => b.id === 'manual-insurance~2031-09-10')!;
+    actions.restoreBill({ ...next, updatedAt: next.updatedAt + 1 });
+    actions.undoPaid(read().bills.find((b) => b.id === bill.id)!);
+    expect(read().bills.some((b) => b.id === 'manual-insurance~2031-09-10')).toBe(true);
+  });
+
   test('the next one of a repeating bill has the id the portal and rollovers use', () => {
     const { actions, read } = setup();
     const bill = read().bills.find((b) => b.id === 'manual-insurance')!;

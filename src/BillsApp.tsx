@@ -93,6 +93,10 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
     actions.markUnpaid(bill);
     notify(t('toast.unpaidAgain', { name: bill.label }), () => actions.restoreBill(bill));
   };
+  const undoPaid = (bill: Bill) => {
+    actions.undoPaid(bill);
+    notify(t('toast.unpaidAgain', { name: bill.label }));
+  };
   const skip = (bill: Bill) => notify(t('toast.skipped', { name: bill.label }), actions.skipBill(bill));
   const unskip = (bill: Bill) => {
     actions.unskipBill(bill);
@@ -130,6 +134,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
         onAdd={() => setBillDialog('new')}
         onEdit={setBillDialog}
         onMarkPaid={markPaid}
+        onUndoPaid={undoPaid}
         onSkip={skip}
         onRemove={remove}
         onOpen={(bill) => setDetailId(bill.id)}

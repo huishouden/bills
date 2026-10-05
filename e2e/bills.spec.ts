@@ -21,13 +21,44 @@ test('groups bills and calls out the ones autopay will not pay', async ({ page }
   await expect(section(page, 'Later this month').getByRole('listitem')).toHaveCount(5);
 });
 
-test('mark paid moves a bill to history, and Undo brings it back', async ({ page }) => {
+test('a bill marked paid stays in its group as paid, with its own Undo; not paid and paid differ by role and name', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: 'Mark Example Power Co paid' }).click();
+  const week = section(page, 'This week');
+  const power = week.getByRole('listitem', { name: 'Example Power Co' });
+  // Not paid: an outlined "Mark paid" named for the bill; no Undo, no aria-pressed.
+  const mark = power.getByRole('button', { name: 'Mark Example Power Co paid' });
+  await expect(mark).toHaveText('Mark paid');
+  await expect(power.getByRole('button', { name: 'Undo paid for Example Power Co' })).toHaveCount(0);
+  await expect(power.locator('[aria-pressed]')).toHaveCount(0);
+  await mark.click();
   await expect(page.getByText('Marked Example Power Co paid')).toBeVisible();
-  await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' })).toBeVisible();
+  // Paid: no "Mark paid", who paid it and when, a small Undo; after the bills still to pay.
+  await expect(power.getByRole('button', { name: 'Mark Example Power Co paid' })).toHaveCount(0);
+  await expect(power).toContainText('Paid by you · 10:30 AM');
+  await expect(power).toHaveAttribute('data-completion', 'done');
+  await expect(week.getByRole('listitem').last()).toHaveAccessibleName('Example Power Co');
+  await expect(power.locator('[aria-pressed]')).toHaveCount(0);
+  // The toast's Undo puts it back as it was.
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(power.getByRole('button', { name: 'Mark Example Power Co paid' })).toBeVisible();
+  // Later, the row's own Undo does too.
+  await power.getByRole('button', { name: 'Mark Example Power Co paid' }).click();
+  await expect(page.getByText('Marked Example Power Co paid')).toBeHidden({ timeout: 10_000 });
+  await power.getByRole('button', { name: 'Undo paid for Example Power Co' }).click();
+  await expect(page.getByText('Example Power Co is unpaid again')).toBeVisible();
+  await expect(power.getByRole('button', { name: 'Mark Example Power Co paid' })).toBeVisible();
+});
+
+test('a group whose bills are all paid folds to one line, which opens again', async ({ page }) => {
+  await open(page);
+  const overdue = section(page, 'Overdue');
+  await overdue.getByRole('button', { name: 'Mark Example Water District paid' }).click();
+  const fold = overdue.getByRole('button', { name: /All paid/ });
+  await expect(fold).toHaveAttribute('aria-expanded', 'false');
+  await expect(overdue.getByRole('listitem')).toHaveCount(0);
+  await fold.click();
+  await expect(overdue.getByRole('listitem', { name: 'Example Water District' })).toContainText('Paid by you');
+  await expect(overdue.getByRole('button', { name: 'Undo paid for Example Water District' })).toBeVisible();
 });
 
 test('a skipped bill shows in history as skipped, and can be put back', async ({ page }) => {
@@ -98,7 +129,7 @@ test('a source is edited and deleted with Undo', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByText('Deleted Example Commons HOA and its unpaid bills')).toBeVisible();
   await expect(page.getByRole('list', { name: 'Bill sources' })).not.toContainText('Example Commons HOA');
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(page.getByRole('list', { name: 'Bill sources' })).toContainText('Example Commons HOA');
 });
 
@@ -120,7 +151,7 @@ test('possible regular bills from card spending: Add and Not a bill, each with U
   await expect(bill).toContainText('Autopay by card');
   await expect(bill).toContainText('repeats monthly');
   await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(card.getByRole('listitem', { name: 'Netflix' })).toBeVisible();
   await expect(page.getByRole('listitem', { name: 'Netflix' })).toHaveCount(1);
 
@@ -128,7 +159,7 @@ test('possible regular bills from card spending: Add and Not a bill, each with U
   await expect(page.getByText("Spotify won't be suggested again")).toBeVisible();
   await expect(card.getByRole('listitem', { name: 'Spotify' })).toHaveCount(0);
   await expect(page.getByText('Subscriptions: $77.55/month across 4')).toBeVisible();
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(card.getByRole('listitem', { name: 'Spotify' })).toBeVisible();
   await expect(page.getByText('Subscriptions: $89.54/month across 5')).toBeVisible();
 });
@@ -148,10 +179,10 @@ test('rent says who to pay and how, copies the Zelle email, and opens its detail
   await expect(detail.getByRole('region', { name: 'How to pay' })).toContainText('Zelle to Example Rentals');
   await expect(detail.getByRole('link', { name: '(555) 010-0123' })).toHaveAttribute('href', /^tel:/);
   await expect(detail.getByRole('region', { name: 'Reminders' })).toContainText('3 days before, on the due day, and the day after if unpaid, at 9:00');
-  await detail.getByRole('button', { name: 'Mark paid' }).click();
+  await detail.getByRole('button', { name: 'Mark Rent paid' }).click();
   await expect(page.getByText('Marked Rent paid')).toBeVisible();
   // The next month's rent is added, still paid to the landlord by Zelle.
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(rent).toBeVisible();
 });
 
@@ -160,7 +191,7 @@ test("a notification's link opens the bill", async ({ page }) => {
   await page.goto('./?bill=manual-rent~2031-06-08');
   const detail = page.getByRole('dialog', { name: 'Rent' });
   await expect(detail).toBeVisible();
-  await expect(detail.getByRole('button', { name: 'Mark paid' })).toBeVisible();
+  await expect(detail.getByRole('button', { name: 'Mark Rent paid' })).toBeVisible();
   await expect(page).toHaveURL(/\/bills\/$/);
 });
 
