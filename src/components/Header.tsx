@@ -31,7 +31,7 @@ export function Header({ tabs, tab, onTab, user, onSignIn, onSignOut, signingIn,
     trackView(tab);
   }, [tab]);
   return (
-    <AppBar app={t('app.name')} glyph="card" portalUrl={PORTAL_URL} version={VERSION} user={user} signingIn={signingIn} onSignIn={onSignIn} onSignOut={onSignOut} onSettings={onSettings}>
+    <AppBar app={t('app.name')} glyph="receipt" portalUrl={PORTAL_URL} version={VERSION} user={user} signingIn={signingIn} onSignIn={onSignIn} onSignOut={onSignOut} onSettings={onSettings}>
       <SectionTabs tabs={tabs} tab={tab} onTab={onTab} />
     </AppBar>
   );
