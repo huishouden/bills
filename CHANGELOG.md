@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.17.0](https://github.com/huishouden/bills/compare/v1.16.0...v1.17.0) (2026-10-05)
+
+### Features
+
+* hashed assets from the suite's asset CDN (pwa-kit 0.100.0) ([a1cb6dc](https://github.com/huishouden/bills/commit/a1cb6dc4c5cc764775b28040c57185a0c1956143))
+
 ## [1.16.0](https://github.com/huishouden/bills/compare/v1.15.0...v1.16.0) (2026-10-05)
 
 ### Features
