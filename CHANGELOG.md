@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/huishouden/bills/compare/v1.13.1...v1.14.0) (2026-10-05)
+
+
+### Features
+
+* **contacts:** contacts saved before positions get one in the background (kit 0.88.0) ([#49](https://github.com/huishouden/bills/issues/49)) ([7410953](https://github.com/huishouden/bills/commit/7410953cb7b60dae13d2fb410a1aaef3c3ebc3c8))
+
+
+### Bug Fixes
+
+* **upcoming:** a folded all-paid group says "Show 1 paid", not "done" (kit 0.89.0) ([#51](https://github.com/huishouden/bills/issues/51)) ([2ae6a9a](https://github.com/huishouden/bills/commit/2ae6a9a572d04e29cde0c4b3b6e937874fdf2bde))
+
 ## [1.13.1](https://github.com/huishouden/bills/compare/v1.13.0...v1.13.1) (2026-10-05)
 
 
