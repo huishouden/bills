@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.17.2](https://github.com/huishouden/bills/compare/v1.17.1...v1.17.2) (2026-10-05)
+
+### Changes
+
+* Agenda, to-do and reminder syncs on open skip the database read when this device published the same items in the last 6 hours; a change, a single record's edit or 6 hours passing syncs as before (pwa-kit 0.103.0)
+
 ## [1.17.1](https://github.com/huishouden/bills/compare/v1.17.0...v1.17.1) (2026-10-05)
 
 ### Bug Fixes
