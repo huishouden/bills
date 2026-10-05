@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/huishouden/bills/compare/v1.13.0...v1.13.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **upcoming:** Mark paid and paid look different; a bill paid here stays, done, with Undo (kit 0.86.0) ([#47](https://github.com/huishouden/bills/issues/47)) ([ce4650a](https://github.com/huishouden/bills/commit/ce4650a26a0fbcdfd715af0b78179510ab64126f))
+
 ## [1.13.0](https://github.com/huishouden/bills/compare/v1.12.1...v1.13.0) (2026-10-04)
 
 
