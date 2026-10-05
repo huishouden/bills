@@ -2,7 +2,7 @@
   "name": "huishouden-bills",
   "private": true,
   "license": "PolyForm-Shield-1.0.0",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3004 --host=0.0.0.0",
@@ -14,7 +14,7 @@
     "e2e:signed-in": "playwright test e2e/signed-in.spec.ts e2e/contact-pay.spec.ts",
     "e2e:emulator": "playwright test e2e/signed-in.spec.ts e2e/contact-pay.spec.ts --grep-invert @staging",
     "screenshots": "playwright test e2e/screenshots.spec.ts",
-    "icons": "pwa-logo card public/icon.svg && pwa-icons --background=#1b4332",
+    "icons": "pwa-logo receipt public/icon.svg && pwa-icons --background=#1b4332",
     "prepare": "git config core.hooksPath .githooks",
     "env:pull": "gh variable list --json name,value -q '.[] | select(.name|startswith(\"VITE_\")) | \"\\(.name)=\\(.value)\"' > .env.local && echo 'wrote .env.local'"
   },
@@ -25,7 +25,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@huishouden/pwa-kit": "github:huishouden/pwa-kit#v0.91.0",
+    "@huishouden/pwa-kit": "github:huishouden/pwa-kit#v0.92.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/bun": "^1.4.2",
