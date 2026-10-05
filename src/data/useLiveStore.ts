@@ -105,6 +105,8 @@ export function useLiveStore(householdId: string, me: string, members: string[],
         {
           // Bills is for admins and members only, so contacts carry their pay details (contactPay).
           by: me,
+          // Contacts saved before positions existed get one, for "2.3 mi from home".
+          backfillPositions: true,
           onError: (e) => {
             setExtrasLoaded((l) => ({ ...l, contacts: true }));
             fail(t('live.loadContacts'))(e);
