@@ -6,7 +6,7 @@ import { cleanDays, manualBillDoc, sourceDoc, type BillSettings, type BillSugges
 import { reminderZone } from '../lib/reminders';
 import { suggestionId } from '../lib/suggestions';
 import { detailField, rememberedPay } from '../lib/payDetails';
-import { nextId, nextRepeat, paidDoc, unpaidDoc } from './build';
+import { nextId, nextRepeat, paidDoc, stepDue, unpaidDoc } from './build';
 import type { BillsActions } from './types';
 
 // The bills actions, written once over a small storage interface that the live (Firestore) and the
@@ -66,6 +66,13 @@ export function createActions(backend: Backend, read: () => BillsData, me: strin
     },
     unskipBill: (bill) => backend.write([{ col: 'bills', id: bill.id, data: { dismissed: false, updatedAt: clock() }, merge: true }]),
     markUnpaid: (bill) => backend.write([{ col: 'bills', id: bill.id, data: unpaidDoc(bill, clock()) }]),
+    undoPaid: (bill) => {
+      const ops: Op[] = [{ col: 'bills', id: bill.id, data: unpaidDoc(bill, clock()) }];
+      const due = bill.source === 'manual' && bill.repeat && bill.due ? stepDue(bill.due, bill.repeat) : null;
+      const next = due ? read().bills.find((b) => b.id === nextId(bill, due)) : undefined;
+      if (next && next.status !== 'paid' && !next.dismissed && next.createdAt === next.updatedAt) ops.push({ col: 'bills', id: next.id, data: null });
+      backend.write(ops);
+    },
     saveManualBill: (id, input) => {
       track('add bill');
       const now = clock();
