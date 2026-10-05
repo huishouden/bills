@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/huishouden/bills/compare/v1.12.1...v1.13.0) (2026-10-04)
+
+
+### Features
+
+* bill reminders keep the household's home time zone (kit 0.84.0) ([#45](https://github.com/huishouden/bills/issues/45)) ([5babfb3](https://github.com/huishouden/bills/commit/5babfb3a9bc2ffe93bdba85c50dc1d7b6956acee))
+
 ## [1.12.1](https://github.com/huishouden/bills/compare/v1.12.0...v1.12.1) (2026-10-04)
 
 
