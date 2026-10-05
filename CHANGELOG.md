@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.0 (2026-10-05)
+
+### Features
+
+* The app bar logo and the PWA icons (icon.svg, 192/512/maskable, apple-touch, og image) show a receipt (kit 0.92.0), so Bills no longer matches Spending's card.
+
 ## [1.14.1](https://github.com/huishouden/bills/compare/v1.14.0...v1.14.1) (2026-10-05)
 
 ### Documentation
