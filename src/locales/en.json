@@ -150,6 +150,7 @@
   "upcoming.week": "This week",
   "upcoming.later": "Later this month",
   "upcoming.allPaid": "All paid",
+  "upcoming.showPaid": "Show {count} paid",
   "upcoming.nothingDue": "Nothing due in the next {days} days.",
   "upcoming.beyond": "{count} more due after the next {days} days.",
   "headline.bills": "{count, plural, one {# bill} other {# bills}} in the next {days} days",

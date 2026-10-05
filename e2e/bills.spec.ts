@@ -55,6 +55,7 @@ test('a group whose bills are all paid folds to one line, which opens again', as
   await overdue.getByRole('button', { name: 'Mark Example Water District paid' }).click();
   const fold = overdue.getByRole('button', { name: /All paid/ });
   await expect(fold).toHaveAttribute('aria-expanded', 'false');
+  await expect(fold).toContainText('Show 1 paid');
   await expect(overdue.getByRole('listitem')).toHaveCount(0);
   await fold.click();
   await expect(overdue.getByRole('listitem', { name: 'Example Water District' })).toContainText('Paid by you');

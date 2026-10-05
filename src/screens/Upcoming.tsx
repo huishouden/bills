@@ -48,7 +48,7 @@ function Group({ title, open, paid, row }: { title: string; open: BillView[]; pa
   return (
     <section aria-label={title}>
       <h2 className={`${overline} mb-1 px-1`}>{title}</h2>
-      <CompletionList items={[...open, ...paid]} isDone={(v) => done.has(v)} label={title} allDone={t('upcoming.allPaid')}>
+      <CompletionList items={[...open, ...paid]} isDone={(v) => done.has(v)} label={title} allDone={t('upcoming.allPaid')} showDone={(count) => t('upcoming.showPaid', { count })}>
         {(v) => row(v, done.has(v))}
       </CompletionList>
     </section>
