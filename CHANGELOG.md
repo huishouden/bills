@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.16.0](https://github.com/huishouden/bills/compare/v1.15.0...v1.16.0) (2026-10-05)
+
+### Features
+
+* **reminders:** each bill reminder names its bill, so paying it elsewhere stops it ([64c1dda](https://github.com/huishouden/bills/commit/64c1dda396c410521f9117a2f06a5c315d4ee6d1))
+
+### Other
+
+* role coverage and wording for reminder sources ([9dca854](https://github.com/huishouden/bills/commit/9dca8541f1fce2004b7e7a0a0247db244cdbb418))
+* docs, review: reminders that stop once done elsewhere ([38b29f5](https://github.com/huishouden/bills/commit/38b29f5b214a436ca16d1750bba330ba013067d8))
+
 ## 1.15.0 (2026-10-05)
 
 ### Features
