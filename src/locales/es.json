@@ -150,6 +150,7 @@
   "upcoming.week": "Esta semana",
   "upcoming.later": "Más adelante este mes",
   "upcoming.allPaid": "Todo pagado",
+  "upcoming.showPaid": "{count, plural, one {Ver # pagada} other {Ver # pagadas}}",
   "upcoming.nothingDue": "Nada vence en los próximos {days} días.",
   "upcoming.beyond": "{count} más vencen después de los próximos {days} días.",
   "headline.bills": "{count, plural, one {# factura} other {# facturas}} en los próximos {days} días",
