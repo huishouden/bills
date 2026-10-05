@@ -134,6 +134,9 @@ describe('the sender drops a bill reminder once the bill is paid elsewhere', () 
     const stored = reminderDoc(list[0], 'alex@example.com', DEMO_NOW).source!;
     expect(readSource('bills', stored)).toEqual(billSource(rent));
     expect(sourceAllowed('bills', stored, 'alex@example.com', 'member', new Map())).toBe(true);
+    // Money: never from a helper or a kid, who can't see bills.
+    expect(sourceAllowed('bills', stored, 'sitter@example.com', 'helper', new Map())).toBe(false);
+    expect(sourceAllowed('bills', stored, 'kid@example.com', 'kid', new Map())).toBe(false);
   });
 
   test("unpaid: still due. Paid or skipped from the portal's To-do list, removed or re-dated: not", () => {

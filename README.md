@@ -70,8 +70,9 @@ Reminders are off unless someone turns them on:
   group whose bills are all paid folds to "All paid". Paid bills are always in History.
 - Tapping a reminder opens the bill, with **Mark paid**. Paying, skipping or removing a bill in
   Bills cancels its pending reminders. One paid or skipped anywhere else (the portal's To-do
-  list, the connector, a calendar) has its reminders dropped unsent by the sender, which checks
-  the bill before each one (`billSource`); Bills tidies them up the next time it opens.
+  list, the connector, a calendar) has its reminders dropped unsent by the sender, which reads
+  the bill named in each reminder's `source` field before sending it; Bills tidies them up the
+  next time it opens.
 - **Notifications on this device** in Bills settings turns them on per phone or tablet. The
   first time a bill has reminders, Upcoming offers it too. **Mute bill reminders for me** stops
   them for one member on all their devices, without changing the household's setting.
