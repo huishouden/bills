@@ -2,7 +2,7 @@ import type { Contact } from '@huishouden/pwa-kit/contact-core';
 import { getHome, householdTimeZone, type HouseholdHome } from '@huishouden/pwa-kit/home';
 import { zonedTime } from '@huishouden/pwa-kit/ics';
 import { formatMoney } from '@huishouden/pwa-kit/money';
-import { reminderId, type ReminderInput } from '@huishouden/pwa-kit/reminders';
+import { reminderId, type ReminderInput, type ReminderSource } from '@huishouden/pwa-kit/reminders';
 import { appUrl, SUITE_ORIGIN } from '@huishouden/pwa-kit/site';
 import { addDays, toYmd, type Ymd } from '@huishouden/pwa-kit/time';
 import { t } from '../i18n';
@@ -52,6 +52,15 @@ export function remindPlan(bill: Bill, own: BillReminder | undefined, settings: 
   return covered ? { days: cleanDays(settings.remindDays), overdue: settings.remindOverdue } : null;
 }
 
+/**
+ * What a bill's reminders are about, for the shared sender to check before sending: the bill, while
+ * it is unpaid, not skipped and still due that day. Paid or skipped anywhere (the portal's To-do
+ * list, the connector, a calendar), re-dated or removed, its reminders are deleted unsent.
+ */
+export const billSource = (bill: Pick<Bill, 'id' | 'due'>): ReminderSource => ({
+  checks: [{ doc: `bills/${bill.id}`, due: [{ field: 'status', notIn: ['paid', 'credit'] }, { field: 'dismissed', notIn: [true] }, { field: 'due', in: [bill.due] }] }],
+});
+
 export interface ReminderContext {
   sources: readonly BillSource[];
   contacts: readonly Contact[];
@@ -72,7 +81,8 @@ function title(label: string, kind: 'before' | 'today' | 'overdue', days: number
  * (an autopay bill's draft date when it has one) and, unless autopay pays it, one the day after.
  * Past ones are left out. Each goes to the member who pays it when one is named, else to everyone
  * (private: the sender skips helpers and kids). Paid, skipped and removed bills have none, so
- * writing the list again cancels theirs.
+ * writing the list again cancels theirs. Each carries its bill as `source` (`billSource`), so the
+ * sender drops it once the bill is paid elsewhere, before Bills is next opened.
  */
 export function billReminders(bills: Bill[], { sources, contacts, settings, now }: ReminderContext): ReminderInput[] {
   const s = settings ?? DEFAULT_BILL_SETTINGS;
@@ -89,7 +99,7 @@ export function billReminders(bills: Bill[], { sources, contacts, settings, now 
     const date = autopay ? (bill.autopay?.nextDraft ?? bill.due) : bill.due;
     const body = [bill.amountDue ? formatMoney(bill.amountDue) : null, payLine(info), info.payNote].filter(Boolean).join(' · ');
     const ref = reminderRef(bill.id);
-    const base = { app: AGENDA_APP, body, url: billUrl(bill.id), recipients: info.payer ? [info.payer] : ('all' as const), ref, private: true };
+    const base = { app: AGENDA_APP, body, url: billUrl(bill.id), recipients: info.payer ? [info.payer] : ('all' as const), ref, private: true, source: billSource(bill) };
     const times: [number, string][] = plan.days.map((d) => [at(addDays(date, -d)), title(bill.label, d === 0 ? 'today' : 'before', d, autopay)]);
     if (plan.overdue) times.push([at(addDays(bill.due, 1)), title(bill.label, 'overdue', 0, autopay)]);
     for (const [when, words] of times) {
