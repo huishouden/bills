@@ -191,7 +191,7 @@ browsers send nothing. The page people see is
 
 ```sh
 bun install          # also enables the pre-commit leak scan
-bun run env:pull     # writes .env.local from the repo's VITE_* variables
+bun run env:pull     # writes .env.local from the repo's STAGING_VITE_* variables (staging project, never production)
 bun run dev          # http://localhost:3004
 bun run lint && bun run test && bunx pwa-design-check && bun run build
 bun run e2e          # smoke, sample-data flows and stubbed-Gmail tests against the live site (BASE_URL to override)
