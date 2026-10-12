@@ -4,18 +4,15 @@ import { commitOps } from '@huishouden/pwa-kit/firestore';
 import { applyOps } from '@huishouden/pwa-kit/store';
 import type { Bill, BillSettings, BillSource, BillSuggestion, BillSuggestionDoc, BillSync } from '../lib/model';
 import { watchContacts, type Contact } from '@huishouden/pwa-kit/contacts';
-import { localizeReminders, syncReminders } from '@huishouden/pwa-kit/reminders';
 import { useHome } from '@huishouden/pwa-kit/react/home';
 import { billReminders } from '../lib/reminders';
 import type { PayContext } from '../lib/pay';
 import { spendingSince, toCharge } from '../lib/suggestions';
 import type { CardCharge } from '@huishouden/pwa-kit/recurring';
 import { toYmd } from '@huishouden/pwa-kit/time';
-import { AGENDA_APP, agendaItems, billAgenda, billRef as agendaRef } from '../lib/agenda';
-import { localizeAgenda, removeAgenda, replaceAgenda, syncAgenda } from '@huishouden/pwa-kit/agenda';
-import { localizeTodos, syncTodos } from '@huishouden/pwa-kit/todos';
-import { todoItems } from '../lib/todos';
 import { auth, db } from './firebase';
+import { billsQuery } from './billsQuery';
+import { followAgenda, publishAgenda, publishReminders, publishTodos } from './publish';
 import { readError } from '@huishouden/pwa-kit/feedback';
 import { t } from '../i18n';
 import { gmailMailbox, requestGmailToken, storedGmailToken } from '@huishouden/pwa-kit/gmail';
@@ -61,7 +58,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     const fail = (prefix: string) => (e: Error) => errorRef.current(readError(e, prefix));
     const unsubs = [
       onSnapshot(
-        collection(db, base, 'bills'),
+        billsQuery(db, base, clock()),
         { includeMetadataChanges: true },
         (s) => {
           setBills(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Bill, 'id'>) })));
@@ -142,21 +139,13 @@ export function useLiveStore(householdId: string, me: string, members: string[],
     return {
       /** Each bill a write touched: its items as written (none once paid or removed), or their removal. */
       follow: (ops: Op[], bills: Bill[]) => {
-        for (const id of new Set(ops.filter((o) => o.col === 'bills').map((o) => o.id))) {
-          const bill = bills.find((b) => b.id === id);
-          // Every language's words, so the portal shows each reader their own.
-          if (bill) void localizeAgenda(() => billAgenda(bill, bills, clock(), undefined, payRef.current)).then((items) => replaceAgenda(db, householdId, AGENDA_APP, agendaRef(id), items, { by: me })).catch(warn);
-          else void removeAgenda(db, householdId, AGENDA_APP, agendaRef(id)).catch(warn);
-        }
+        for (const id of new Set(ops.filter((o) => o.col === 'bills').map((o) => o.id))) void followAgenda(db, householdId, me, id, bills, { now: clock(), pay: payRef.current }).catch(warn);
       },
-      sync: (bills: Bill[]) => void localizeAgenda(() => agendaItems(bills, clock(), undefined, payRef.current)).then((items) => syncAgenda(db, householdId, AGENDA_APP, items, { by: me })).catch(warn),
+      sync: (bills: Bill[]) => void publishAgenda(db, householdId, me, bills, { now: clock(), pay: payRef.current }).catch(warn),
       // The household's to-do list (bills to pay), written whole: on open and after every write here,
       // at once, so it is up to date even if the app is closed right after. Paid or skipped on the
       // portal, the item is removed there.
-      todos: (bills: Bill[]) =>
-        void localizeTodos(() => todoItems(bills, clock(), undefined, undefined, payRef.current))
-          .then((items) => syncTodos(db, householdId, AGENDA_APP, items, { by: me }))
-          .catch((e) => console.warn('To-do update failed', e)),
+      todos: (bills: Bill[]) => void publishTodos(db, householdId, me, bills, { now: clock(), pay: payRef.current }).catch((e) => console.warn('To-do update failed', e)),
     };
   }, [householdId, me]);
 
@@ -227,8 +216,7 @@ export function useLiveStore(householdId: string, me: string, members: string[],
       const signature = JSON.stringify(build().map((r) => [r.id, r.title, r.body, r.recipients]));
       if (signature === lastReminders.current) return;
       lastReminders.current = signature;
-      localizeReminders(build)
-        .then((list) => syncReminders(db, householdId, AGENDA_APP, list, me, now))
+      publishReminders(db, householdId, me, bills, { sources, contacts, settings: settings[0] ?? null }, { now })
         .catch((e) => {
           lastReminders.current = '';
           console.warn('Reminder update failed', e);
