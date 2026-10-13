@@ -1,12 +1,10 @@
 {
   "app.name": "Bills",
   "app.documentTitle": "Huishouden Bills",
-  "app.loading": "Loading the household's bills",
   "tabs.upcoming": "Upcoming",
   "tabs.history": "History",
   "tabs.sources": "Sources",
   "signIn.failed": "Couldn't sign in. Try again.",
-  "household.finding": "Finding your household.",
   "household.unreachable": "Couldn't reach the household. Check the connection; the app retries on its own.",
   "household.noneTitle": "Not in a household yet",
   "household.noneBody": "{email} isn't a member of a Huishouden household. Ask someone in your household to invite this address from the Huishouden home screen, then open Bills again. If you use another Google account for the household, sign out and sign in with that one.",

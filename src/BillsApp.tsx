@@ -1,13 +1,13 @@
-import { CalendarClock, History as HistoryIcon, Mail } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { useClock } from '@huishouden/pwa-kit/react/clock';
-import { Header, type Tab } from './components/Header';
+import { AppFrame, AppOpening } from '@huishouden/pwa-kit/react/frame';
+import { billsFrame, useBillsTab } from './components/frame';
 import { BillDialog } from './components/BillDialog';
 import { FindBillsDialog } from './components/FindBillsDialog';
 import { SourceDialog } from './components/SourceDialog';
-import { ScreenSkeleton, Toast, type ToastState } from '@huishouden/pwa-kit/react/ui';
-import { useUrlParam, useUrlTab } from '@huishouden/pwa-kit/react/url-state';
+import { Toast, type ToastState } from '@huishouden/pwa-kit/react/ui';
+import { useUrlParam } from '@huishouden/pwa-kit/react/url-state';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import type { Bill, BillSource } from './lib/model';
 import { viewBills } from './lib/view';
@@ -25,7 +25,7 @@ import { payInfo } from './lib/pay';
 import { remindPlan, type Plan } from './lib/reminders';
 import { DEFAULT_BILL_SETTINGS } from './lib/model';
 
-export type TabId = 'upcoming' | 'history' | 'sources';
+export type { TabId } from './components/frame';
 
 interface Props {
   store: BillsStore;
@@ -40,26 +40,13 @@ interface Props {
   banner?: ReactNode;
 }
 
-const TABS = [
-  { id: 'upcoming', key: 'tabs.upcoming', icon: CalendarClock },
-  { id: 'history', key: 'tabs.history', icon: HistoryIcon },
-  { id: 'sources', key: 'tabs.sources', icon: Mail },
-] as const;
-
-/** The tabs' ids, in order: the address's `?tab=` names one of them. */
-export const TAB_IDS: readonly TabId[] = TABS.map((x) => x.id);
-
-/** The app bar's tabs, in the page's language. */
-export const tabsFor = (t: ReturnType<typeof useT>): Tab[] => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon }));
-
 /** Everything inside the frame once there is data to show (live or sample). */
 export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, notify, clearToast, banner }: Props) {
   const t = useT();
-  const tabs: Tab[] = useMemo(() => tabsFor(t), [t]);
   const { now } = useClock();
   const today = toYmd(now);
   // The tab and the bill open in detail live in the address, so a reload (an update) and Back return to them.
-  const [tab, setTab] = useUrlTab(TAB_IDS, 'upcoming');
+  const [tab, setTab] = useBillsTab();
   const [billDialog, setBillDialog] = useState<Bill | 'new' | null>(null);
   const [sourceDialog, setSourceDialog] = useState<BillSource | 'new' | null>(null);
   const [finding, setFinding] = useState(false);
@@ -123,9 +110,12 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
     notify(t('toast.wontSuggest', { name }), actions.dismissSuggestion(c, name));
   };
 
+  const frame = billsFrame(t, { user, onSignIn, onSignOut, signingIn }, { id: tab, choose: (id) => setTab(id) });
+  // The first data still on its way: the opening frame, which counts no view yet.
+  if (!store.ready) return <AppOpening {...frame} phase="data" />;
+
   let content: ReactNode;
-  if (!store.ready) content = <ScreenSkeleton label={t('app.loading')} />;
-  else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
+  if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
   else if (tab === 'sources')
     content = <Sources store={store} now={now} check={email.state} onCheck={() => void email.check()} onFind={find} onAdd={() => setSourceDialog('new')} onEdit={setSourceDialog} />;
   else
@@ -153,14 +143,8 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
       />
     );
 
-  return (
-    <div className="flex min-h-dvh flex-col bg-page font-sans text-ink antialiased">
-      <Header tabs={tabs} tab={tab} onTab={(id) => setTab(id as TabId)} user={user} onSignIn={onSignIn} onSignOut={onSignOut} signingIn={signingIn} onSettings={() => setSettingsOpen(true)} />
-      <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-4 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-6">
-        {banner}
-        {content}
-      </main>
-
+  const dialogs = (
+    <>
       {billDialog && (
         <BillDialog
           bill={billDialog === 'new' ? null : billDialog}
@@ -238,6 +222,13 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
       )}
       {settingsOpen && <SettingsDialog settings={settings} live={store.live} onSave={actions.saveSettings} onClose={() => setSettingsOpen(false)} />}
       <Toast toast={toast} onDone={clearToast} />
-    </div>
+    </>
+  );
+
+  return (
+    <AppFrame {...frame} onSettings={() => setSettingsOpen(true)} after={dialogs}>
+        {banner}
+        {content}
+    </AppFrame>
   );
 }
