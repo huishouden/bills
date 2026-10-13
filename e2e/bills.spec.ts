@@ -193,7 +193,19 @@ test("a notification's link opens the bill", async ({ page }) => {
   const detail = page.getByRole('dialog', { name: 'Rent' });
   await expect(detail).toBeVisible();
   await expect(detail.getByRole('button', { name: 'Mark Rent paid' })).toBeVisible();
+  // The open bill stays in the address, so a reload keeps it open; closing it takes it out.
+  await page.reload();
+  await expect(detail).toBeVisible();
+  await detail.getByRole('button', { name: 'Close' }).first().click();
+  await expect(detail).toHaveCount(0);
   await expect(page).toHaveURL(/\/bills\/$/);
+});
+
+test("a link to a bill that isn't there leaves the address", async ({ page }) => {
+  await page.clock.setFixedTime(fixedTime);
+  await page.goto('./?tab=history&bill=no-such-bill');
+  await expect(page.locator('nav[slot="nav"] button[aria-current="page"]')).toHaveText('History');
+  await expect(page).toHaveURL(/\/bills\/\?tab=history$/);
 });
 
 test("reminders are off unless turned on: a bill's own, and the household default in Settings", async ({ page }) => {

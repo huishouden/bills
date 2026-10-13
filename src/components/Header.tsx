@@ -17,6 +17,8 @@ interface Props {
   onSignIn: () => void;
   onSignOut: () => void;
   signingIn?: boolean;
+  /** The frame while the app opens: no tab view counted yet (the app's own Header counts it). */
+  opening?: boolean;
   /** Bills settings: notifications and the household's reminders. */
   onSettings?: () => void;
 }
@@ -24,12 +26,12 @@ interface Props {
 const VERSION = `${import.meta.env.VITE_APP_VERSION} (${import.meta.env.VITE_BUILD_SHA})`;
 
 /** The kit's Huishouden app bar with Bills' sections as its tabs. */
-export function Header({ tabs, tab, onTab, user, onSignIn, onSignOut, signingIn, onSettings }: Props) {
+export function Header({ tabs, tab, onTab, user, onSignIn, onSignOut, signingIn, onSettings, opening }: Props) {
   const t = useT();
   // Counts which tabs are used (anonymous, per visit; see the portal's /privacy page).
   useEffect(() => {
-    trackView(tab);
-  }, [tab]);
+    if (!opening) trackView(tab);
+  }, [tab, opening]);
   return (
     <AppBar app={t('app.name')} glyph="receipt" portalUrl={PORTAL_URL} version={VERSION} user={user} signingIn={signingIn} onSignIn={onSignIn} onSignOut={onSignOut} onSettings={onSettings}>
       <SectionTabs tabs={tabs} tab={tab} onTab={onTab} />
