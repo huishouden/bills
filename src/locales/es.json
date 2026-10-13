@@ -1,12 +1,10 @@
 {
   "app.name": "Facturas",
   "app.documentTitle": "Huishouden Facturas",
-  "app.loading": "Cargando las facturas del hogar",
   "tabs.upcoming": "Próximas",
   "tabs.history": "Historial",
   "tabs.sources": "Fuentes",
   "signIn.failed": "No se pudo iniciar sesión. Inténtalo de nuevo.",
-  "household.finding": "Buscando tu hogar.",
   "household.unreachable": "No se pudo conectar con el hogar. Revisa la conexión; la app vuelve a intentarlo sola.",
   "household.noneTitle": "Todavía no estás en un hogar",
   "household.noneBody": "{email} no es miembro de ningún hogar de Huishouden. Pídele a alguien de tu hogar que invite esta dirección desde la pantalla de inicio de Huishouden y luego vuelve a abrir Facturas. Si usas otra cuenta de Google para el hogar, cierra sesión e inicia sesión con esa.",

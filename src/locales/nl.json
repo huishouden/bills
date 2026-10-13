@@ -1,12 +1,10 @@
 {
   "app.name": "Rekeningen",
   "app.documentTitle": "Huishouden Rekeningen",
-  "app.loading": "Rekeningen van het huishouden laden",
   "tabs.upcoming": "Binnenkort",
   "tabs.history": "Geschiedenis",
   "tabs.sources": "Bronnen",
   "signIn.failed": "Inloggen lukte niet. Probeer het opnieuw.",
-  "household.finding": "Je huishouden zoeken.",
   "household.unreachable": "Het huishouden is niet bereikbaar. Controleer de verbinding; de app probeert het zelf opnieuw.",
   "household.noneTitle": "Nog niet in een huishouden",
   "household.noneBody": "{email} is geen lid van een Huishouden-huishouden. Vraag iemand uit je huishouden om dit adres uit te nodigen via het Huishouden-startscherm en open daarna Rekeningen opnieuw. Gebruik je een ander Google-account voor het huishouden? Log dan uit en log in met dat account.",
