@@ -6,7 +6,8 @@ import { Header, type Tab } from './components/Header';
 import { BillDialog } from './components/BillDialog';
 import { FindBillsDialog } from './components/FindBillsDialog';
 import { SourceDialog } from './components/SourceDialog';
-import { Toast, type ToastState } from '@huishouden/pwa-kit/react/ui';
+import { ScreenSkeleton, Toast, type ToastState } from '@huishouden/pwa-kit/react/ui';
+import { useUrlParam, useUrlTab } from '@huishouden/pwa-kit/react/url-state';
 import { toYmd } from '@huishouden/pwa-kit/time';
 import type { Bill, BillSource } from './lib/model';
 import { viewBills } from './lib/view';
@@ -24,7 +25,7 @@ import { payInfo } from './lib/pay';
 import { remindPlan, type Plan } from './lib/reminders';
 import { DEFAULT_BILL_SETTINGS } from './lib/model';
 
-type TabId = 'upcoming' | 'history' | 'sources';
+export type TabId = 'upcoming' | 'history' | 'sources';
 
 interface Props {
   store: BillsStore;
@@ -45,19 +46,27 @@ const TABS = [
   { id: 'sources', key: 'tabs.sources', icon: Mail },
 ] as const;
 
+/** The tabs' ids, in order: the address's `?tab=` names one of them. */
+export const TAB_IDS: readonly TabId[] = TABS.map((x) => x.id);
+
+/** The app bar's tabs, in the page's language. */
+export const tabsFor = (t: ReturnType<typeof useT>): Tab[] => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon }));
+
 /** Everything inside the frame once there is data to show (live or sample). */
 export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, notify, clearToast, banner }: Props) {
   const t = useT();
-  const tabs: Tab[] = useMemo(() => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon })), [t]);
+  const tabs: Tab[] = useMemo(() => tabsFor(t), [t]);
   const { now } = useClock();
   const today = toYmd(now);
-  const [tab, setTab] = useState<TabId>('upcoming');
+  // The tab and the bill open in detail live in the address, so a reload (an update) and Back return to them.
+  const [tab, setTab] = useUrlTab(TAB_IDS, 'upcoming');
   const [billDialog, setBillDialog] = useState<Bill | 'new' | null>(null);
   const [sourceDialog, setSourceDialog] = useState<BillSource | 'new' | null>(null);
   const [finding, setFinding] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // A bill opened from its row or a notification (`?bill=<id>`).
-  const [detailId, setDetailId] = useState<string | null>(() => new URLSearchParams(globalThis.location?.search ?? '').get('bill'));
+  const [detailId, setBillParam] = useUrlParam('bill');
+  const setDetailId = (id: string | null) => setBillParam(id, { replace: true });
   const email = useEmailCheck(store);
   const views = useMemo(() => viewBills(store.data.bills, today), [store.data.bills, today]);
   const { actions } = store;
@@ -71,13 +80,6 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
     document.title = t('app.documentTitle');
   }, [t]);
 
-  // A notification's link opens the bill once; the address goes back to the app's own.
-  useEffect(() => {
-    const url = new URL(location.href);
-    if (!url.searchParams.has('bill')) return;
-    url.searchParams.delete('bill');
-    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-  }, []);
   const detail = detailId && store.ready ? views.find((v) => v.bill.id === detailId) : undefined;
   const editSource = (bill: Bill) => {
     const source = sources.find((x) => x.id === bill.sourceId);
@@ -117,7 +119,7 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   };
 
   let content: ReactNode;
-  if (!store.ready) content = <p className="p-2 text-lg text-muted">{t('app.loading')}</p>;
+  if (!store.ready) content = <ScreenSkeleton label={t('app.loading')} />;
   else if (tab === 'history') content = <History views={views} today={today} me={store.me} onMarkUnpaid={markUnpaid} onUnskip={unskip} onRemove={remove} />;
   else if (tab === 'sources')
     content = <Sources store={store} now={now} check={email.state} onCheck={() => void email.check()} onFind={find} onAdd={() => setSourceDialog('new')} onEdit={setSourceDialog} />;
