@@ -81,6 +81,11 @@ export function BillsApp({ store, user, onSignIn, onSignOut, signingIn, toast, n
   }, [t]);
 
   const detail = detailId && store.ready ? views.find((v) => v.bill.id === detailId) : undefined;
+  // A link to a bill that isn't there (paid and gone, removed, not this person's): out of the address.
+  const stale = !!detailId && store.ready && !detail;
+  useEffect(() => {
+    if (stale) setDetailId(null);
+  }, [stale]);
   const editSource = (bill: Bill) => {
     const source = sources.find((x) => x.id === bill.sourceId);
     if (source) setSourceDialog(source);

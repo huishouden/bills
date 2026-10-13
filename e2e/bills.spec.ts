@@ -201,6 +201,13 @@ test("a notification's link opens the bill", async ({ page }) => {
   await expect(page).toHaveURL(/\/bills\/$/);
 });
 
+test("a link to a bill that isn't there leaves the address", async ({ page }) => {
+  await page.clock.setFixedTime(fixedTime);
+  await page.goto('./?tab=history&bill=no-such-bill');
+  await expect(page.locator('nav[slot="nav"] button[aria-current="page"]')).toHaveText('History');
+  await expect(page).toHaveURL(/\/bills\/\?tab=history$/);
+});
+
 test("reminders are off unless turned on: a bill's own, and the household default in Settings", async ({ page }) => {
   await open(page);
   const power = section(page, 'This week').getByRole('listitem', { name: 'Example Power Co' });
