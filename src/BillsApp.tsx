@@ -25,7 +25,6 @@ import { payInfo } from './lib/pay';
 import { remindPlan, type Plan } from './lib/reminders';
 import { DEFAULT_BILL_SETTINGS } from './lib/model';
 
-export type { TabId } from './components/frame';
 
 interface Props {
   store: BillsStore;

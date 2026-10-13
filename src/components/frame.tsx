@@ -16,10 +16,10 @@ const TABS = [
 ] as const;
 
 /** The tabs' ids, in order: the address's `?tab=` names one of them. */
-export const TAB_IDS: readonly TabId[] = TABS.map((x) => x.id);
+const TAB_IDS: readonly TabId[] = TABS.map((x) => x.id);
 
 /** The app bar's tabs, in the page's language. */
-export const tabsFor = (t: ReturnType<typeof useT>): Tab[] => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon }));
+const tabsFor = (t: ReturnType<typeof useT>): Tab[] => TABS.map(({ id, key, icon }) => ({ id, label: t(key), icon }));
 
 /** The tab on screen, in the address (`?tab=history`), so a reload and Back return to it. */
 export const useBillsTab = () => useUrlTab(TAB_IDS, 'upcoming');

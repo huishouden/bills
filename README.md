@@ -11,9 +11,9 @@ Live at https://huishouden-piekstra.web.app/bills/; the old address, huishouden-
 |---|---|
 | ![Overdue, this week and later this month, with autopay state and amounts](docs/screenshots/upcoming.png) | ![Senders of statement emails proposed as bill sources](docs/screenshots/find-bills.png) |
 
-| Possible regular bills | |
+| Possible regular bills | Opening |
 |---|---|
-| ![Regular card charges offered as bills, with Add and Not a bill](docs/screenshots/suggested-bills.png) | |
+| ![Regular card charges offered as bills, with Add and Not a bill](docs/screenshots/suggested-bills.png) | ![While Bills opens: the app bar and tabs already in place over a placeholder, so nothing moves when the bills arrive](docs/screenshots/opening.png) |
 
 | Reminders | Rent: who to pay and how |
 |---|---|
